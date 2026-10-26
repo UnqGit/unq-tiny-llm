@@ -1,0 +1,32 @@
+[
+    {
+        "name": "Kendrick Lamar",
+        "path": "kendricklamar",
+        "done": true
+    },
+    {
+        "name": "Eminem",
+        "path": "eminem",
+        "done": true
+    },
+    {
+        "name": "Kanye West",
+        "path": "west",
+        "done": true
+    },
+    {
+        "name": "MF Doom",
+        "path": "mfdoom",
+        "done": true
+    },
+    {
+        "name": "Tupac",
+        "path": "2pac",
+        "done": true
+    },
+    {
+        "name": "Snoop Dogg",
+        "path": "snoopdogg",
+        "done": true
+    }
+]
