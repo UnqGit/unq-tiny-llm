@@ -21,7 +21,7 @@ ROOT_URL = "https://www.azlyrics.com"
 def get_request(func):
     @wraps(func)
     def wrapper(url, *args, **kwargs):
-        time.sleep(0.75)
+        time.sleep(1)
         try:
             response = requests.get(url, headers=HEADERS, timeout=10, allow_redirects=True)
             response.raise_for_status()
