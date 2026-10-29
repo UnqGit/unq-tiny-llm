@@ -1,26 +1,5 @@
 use std::collections::HashMap;
-
-pub type TokenSeq = Vec<u8>;
-pub type TokenId = u32;
-
-#[derive(Clone, Debug)]
-pub struct VocabWord {
-    seq: TokenSeq,
-    id: TokenId,
-}
-
-#[derive(Copy, Clone, Debug)]
-pub struct Merge {
-    left: TokenId,
-    right: TokenId,
-    merged: TokenId,
-}
-
-#[derive(Clone, Debug)]
-pub struct BpeTokenizer {
-    vocab: Vec<VocabWord>,
-    merges: Vec<Merge>,
-}
+use crate::tokenizer::bpe::types::*;
 
 pub fn count_pairs(sequence: &[TokenId]) -> HashMap<(TokenId, TokenId), usize> {
     let mut result = HashMap::new();
@@ -33,7 +12,7 @@ pub fn count_pairs(sequence: &[TokenId]) -> HashMap<(TokenId, TokenId), usize> {
     result
 }
 
-fn get_most_freq_pair(pairs_count: &HashMap<(u32, u32), usize>) -> Option<(u32, u32)> {
+fn get_most_freq_pair(pairs_count: &HashMap<(TokenId, TokenId), usize>) -> Option<(TokenId, TokenId)> {
     pairs_count
         .iter()
         .filter(|&(_, count)| *count >= 2usize)
@@ -63,8 +42,8 @@ fn bpe_iter(token_sequence: &[TokenId], vocab: &[VocabWord]) -> Option<(Vec<Toke
     let (token_1, token_2) = most_freq_pair;
 
     let new_word_seq = [
-        vocab[token_1 as usize].seq.clone(),
-        vocab[token_2 as usize].seq.clone(),
+        vocab[token_1].seq.clone(),
+        vocab[token_2].seq.clone(),
     ]
     .concat();
 
@@ -86,7 +65,7 @@ fn bpe_iter(token_sequence: &[TokenId], vocab: &[VocabWord]) -> Option<(Vec<Toke
     Some((result_seq, new_vocab_word, merge))
 }
 
-pub fn bpe_training(text: &str, vocab_size: u32) -> Result<BpeTokenizer, String> {
+pub fn bpe_training(text: &str, vocab_size: usize) -> Result<BpeTokenizer, String> {
     if text.is_empty() {
         return Err(String::from("Cannot encode text of length 0"));
     }
@@ -95,11 +74,11 @@ pub fn bpe_training(text: &str, vocab_size: u32) -> Result<BpeTokenizer, String>
     let mut merges = Vec::new();
     let mut token_sequence = get_init_token_sequence(text.as_bytes());
 
-    if (vocab_size as usize) < vocab.len() {
+    if (vocab_size) < vocab.len() {
         return Err(format!("Initial vocab of lone letters of size {} exceed the desired 'vocab_size' of {}", vocab.len(), vocab_size));
     }
 
-    while (vocab_size as usize) > vocab.len() {
+    while (vocab_size) > vocab.len() {
         let Some(seq_tok) = bpe_iter(&token_sequence, &vocab) else {
             break;
         };

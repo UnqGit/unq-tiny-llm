@@ -3,7 +3,7 @@ mod cli;
 
 use std::env;
 use std::process;
-use tokenizer::bpe::training::bpe_training;
+use tokenizer::bpe::trainer::train_and_save;
 
 fn main() {
     let args: Vec<String> = env::args().skip(1).collect();
@@ -15,7 +15,7 @@ fn main() {
 
     let text = &args[0];
 
-    let vocab_size: u32 = match args.get(1) {
+    let vocab_size: usize = match args.get(1) {
         Some(value) => match value.parse() {
             Ok(size) => size,
             Err(_) => {
@@ -26,14 +26,6 @@ fn main() {
         None => 300,
     };
 
-    match bpe_training(text, vocab_size) {
-        Ok(tokenizer) => {
-            println!("BPE training completed successfully!");
-            println!("{:#?}", tokenizer);
-        }
-        Err(error) => {
-            eprintln!("Error: {error}");
-            process::exit(1);
-        }
-    }
+    let _ = train_and_save(text, vocab_size, "/encoding.json")
+        .map_err(|e| println!("Could not train and save the text: {e}"));
 }
