@@ -1,0 +1,5 @@
+[paths]
+tokenizer = "data/tokenizer.json"
+
+[training]
+vocab_size = 1000
