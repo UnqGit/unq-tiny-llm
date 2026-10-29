@@ -1,5 +1,6 @@
 [paths]
-tokenizer = "data/tokenizer.json"
+tokenizer = "data/training/tokenizer.json"
+training_dataset = "data/dataset/"
 
 [training]
 vocab_size = 1000

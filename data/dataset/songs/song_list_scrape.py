@@ -1,4 +1,4 @@
-from util import get_request, get_link, get_create_artist_dir, PATH
+from data.dataset.songs.util import get_request, get_link, get_create_artist_dir, PATH
 from bs4 import BeautifulSoup
 import json
 

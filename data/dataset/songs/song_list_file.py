@@ -1,4 +1,4 @@
-from util import get_create_artist_dir, artist_names, get_file_name
+from data.dataset.songs.util import get_create_artist_dir, artist_names, get_file_name
 import json
 
 
