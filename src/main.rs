@@ -26,6 +26,10 @@ fn main() {
         None => 300,
     };
 
-    let _ = train_and_save(text, vocab_size, "/encoding.json")
-        .map_err(|e| println!("Could not train and save the text: {e}"));
+    match train_and_save(text, vocab_size, "/encoding.json")
+        .map_err(|e| println!("Could not train and save the text: {e}"))
+    {
+        Ok(v) => v,
+        Err(e) => e,
+    }
 }

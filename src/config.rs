@@ -11,6 +11,7 @@ pub struct Config {
 #[derive(Debug, Deserialize)]
 pub struct PathConfig {
     pub tokenizer: PathBuf,
+    pub training_dataset:  PathBuf,
 }
 
 #[derive(Debug, Deserialize)]

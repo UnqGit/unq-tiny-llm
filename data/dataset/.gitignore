@@ -1,5 +1,5 @@
 */__pycache__/
 */temp_helper.py
 
-/songs/*/*.txt
+*.txt
 /songs/*/list.json
