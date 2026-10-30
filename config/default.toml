@@ -4,3 +4,4 @@ training_dataset = "data/dataset/"
 
 [training]
 vocab_size = 1000
+min_pair_freq = 2

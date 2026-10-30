@@ -16,7 +16,8 @@ pub struct PathConfig {
 
 #[derive(Debug, Deserialize)]
 pub struct TrainingConfig {
-    pub vocab_size: usize
+    pub vocab_size: usize,
+    pub min_pair_freq: usize,
 }
 
 impl Config {

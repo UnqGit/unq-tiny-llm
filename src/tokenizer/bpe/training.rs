@@ -12,10 +12,10 @@ pub fn count_pairs(sequence: &[TokenId]) -> HashMap<(TokenId, TokenId), usize> {
     result
 }
 
-fn get_most_freq_pair(pairs_count: &HashMap<(TokenId, TokenId), usize>) -> Option<(TokenId, TokenId)> {
+fn get_most_freq_pair(pairs_count: &HashMap<(TokenId, TokenId), usize>, min_pair_freq: usize) -> Option<(TokenId, TokenId)> {
     pairs_count
         .iter()
-        .filter(|&(_, count)| *count >= 2usize)
+        .filter(|&(_, count)| *count >= min_pair_freq)
         .max_by(|(pair_a, count_a), (pair_b, count_b)|
             count_a
                 .cmp(count_b)
@@ -36,9 +36,9 @@ fn get_init_token_sequence(byte_sequence: &[u8]) -> Vec<TokenId> {
         .collect()
 }
 
-fn bpe_iter(token_sequence: &[TokenId], vocab: &[VocabWord]) -> Option<(Vec<TokenId>, VocabWord, Merge)> {
+fn bpe_iter(token_sequence: &[TokenId], vocab: &[VocabWord], min_pair_freq: usize) -> Option<(Vec<TokenId>, VocabWord, Merge)> {
     let pairs_count = count_pairs(token_sequence);
-    let most_freq_pair = get_most_freq_pair(&pairs_count)?;
+    let most_freq_pair = get_most_freq_pair(&pairs_count, min_pair_freq)?;
     let (token_1, token_2) = most_freq_pair;
 
     let new_word_seq = [
@@ -65,7 +65,7 @@ fn bpe_iter(token_sequence: &[TokenId], vocab: &[VocabWord]) -> Option<(Vec<Toke
     Some((result_seq, new_vocab_word, merge))
 }
 
-pub fn bpe_training(text: &str, vocab_size: usize) -> Result<BpeTokenizer, String> {
+pub fn bpe_training(text: &str, vocab_size: usize, min_pair_freq: usize) -> Result<BpeTokenizer, String> {
     if text.is_empty() {
         return Err(String::from("Cannot encode text of length 0"));
     }
@@ -79,7 +79,7 @@ pub fn bpe_training(text: &str, vocab_size: usize) -> Result<BpeTokenizer, Strin
     }
 
     while (vocab_size) > vocab.len() {
-        let Some(seq_tok) = bpe_iter(&token_sequence, &vocab) else {
+        let Some(seq_tok) = bpe_iter(&token_sequence, &vocab, min_pair_freq) else {
             break;
         };
         token_sequence = seq_tok.0;

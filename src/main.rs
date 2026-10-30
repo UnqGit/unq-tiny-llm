@@ -1,35 +1,24 @@
-mod tokenizer;
 mod cli;
+mod config;
 
-use std::env;
-use std::process;
-use tokenizer::bpe::trainer::train_and_save;
+use config::Config;
+use cli::cli::run;
+use std::{env, process, path::Path};
 
 fn main() {
-    let args: Vec<String> = env::args().skip(1).collect();
-
-    if args.is_empty() {
-        eprintln!("Usage: cargo run -- <text> [vocab_size]");
-        process::exit(1);
-    }
-
-    let text = &args[0];
-
-    let vocab_size: usize = match args.get(1) {
-        Some(value) => match value.parse() {
-            Ok(size) => size,
-            Err(_) => {
-                eprintln!("Error: vocab_size must be a valid unsigned integer.");
-                process::exit(1);
-            }
-        },
-        None => 300,
+    let config_path: &Path = Path::new("config/default.toml");
+    let mut config = match Config::load(config_path) {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("Could not load configs: {e}");
+            process::exit(1);
+        }
     };
 
-    match train_and_save(text, vocab_size, "/encoding.json")
-        .map_err(|e| println!("Could not train and save the text: {e}"))
-    {
-        Ok(v) => v,
-        Err(e) => e,
+    let args: Vec<String> = env::args().skip(1).collect();
+    let result = run(&args, &mut config);
+    if let Err(e) = result {
+        eprintln!("Could not run the program: {e}");
+        process::exit(1);
     }
 }
