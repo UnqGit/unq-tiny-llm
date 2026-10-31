@@ -18,7 +18,7 @@ fn main() {
     let args: Vec<String> = env::args().skip(1).collect();
     let result = run(&args, &mut config);
     if let Err(e) = result {
-        eprintln!("Could not run the program: {e}");
+        eprintln!("Could not run the program: \n\n{e}");
         process::exit(1);
     }
 }

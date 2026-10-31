@@ -1,20 +1,21 @@
+#![allow(warnings)]
 use std::fs;
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Config {
     pub paths: PathConfig,
     pub training: TrainingConfig,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct PathConfig {
     pub tokenizer: PathBuf,
     pub training_dataset:  PathBuf,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Copy, Debug, Deserialize)]
 pub struct TrainingConfig {
     pub vocab_size: usize,
     pub min_pair_freq: usize,
