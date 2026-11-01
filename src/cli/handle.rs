@@ -36,17 +36,13 @@ struct CommandSpec<'a> {
     arguments: Option<&'a [ArgConfig<'a>]>,
 }
 
-static PREPROCESSING_ARGUMENTS: &[ArgConfig] = &[
-    ArgConfig { config: "--vocab-size",     required: true,  value: ValueType::UInt },
-    ArgConfig { config: "--dataset",        required: false, value: ValueType::Path },
-    ArgConfig { config: "--min-pair-freq",  required: false, value: ValueType::UInt },
-];
+#[derive(Clone, Copy, Debug)]
+struct ArgumentState {
+    value_type: ValueType,
+    visited: bool,
+}
 
-static COMMANDS: &[CommandSpec] = &[
-    CommandSpec { command: "-pre-processing", arguments: Some(PREPROCESSING_ARGUMENTS) },
-];
-
-type ArgumentBookKeeping<'a> = HashMap<&'a str, (ValueType, bool)>;
+type ArgStateTable<'a> = HashMap<&'a str, ArgumentState>;
 
 impl ValueType {
     fn as_str(&self) -> &'static str {
@@ -56,7 +52,23 @@ impl ValueType {
             ValueType::Path => "path",
         }
     }
+    fn is_none(&self) -> bool {
+        matches!(&self, ValueType::None)
+    }
+    fn is_some(&self) -> bool {
+        !self.is_none()
+    }
 }
+
+static PREPROCESSING_ARGUMENTS: &[ArgConfig] = &[
+    ArgConfig { config: "--vocab-size",     required: true,  value: ValueType::UInt },
+    ArgConfig { config: "--dataset",        required: false, value: ValueType::Path },
+    ArgConfig { config: "--min-pair-freq",  required: false, value: ValueType::UInt },
+];
+
+static COMMANDS: &[CommandSpec] = &[
+    CommandSpec { command: "-pre-processing", arguments: Some(PREPROCESSING_ARGUMENTS) },
+];
 
 fn collect_commands<'a>() -> Vec<(String, Vec<ArgConfig<'a>>)> {
     COMMANDS.iter()
@@ -74,7 +86,7 @@ fn format_arguments<'a>(args: &[ArgConfig<'a>]) -> String {
     args.iter()
         .map(|arg| {
             let a_name = arg.config;
-            let fmt_val_names = if arg.value == ValueType::None { String::new() } else { format!(" <{}>", arg.value.as_str()) };
+            let fmt_val_names = if arg.value.is_none() { String::new() } else { format!(" <{}>", arg.value.as_str()) };
             match arg.required {
                 false => format!("[{}{}]", a_name,  fmt_val_names),
                 true => format!("{}{}", a_name, fmt_val_names),
@@ -153,13 +165,13 @@ fn repeated_config_err(args: &[String], i: usize) -> String {
     )
 }
 
-fn parse_value(val_type: ValueType, argument: &str, val_arg: &str) -> Result<Value, String> {
-    let val_str_rep = val_type.as_str();
+fn parse_value(value_type: ValueType, argument: &str, val_arg: &str) -> Result<Value, String> {
+    let val_str_rep = value_type.as_str();
     let fmt_err_usage = format!(
         "Could not parse <{}> from `{}`.\nArgument `{}` expected <{}>, got `{}`.",
         val_str_rep, val_arg, argument, val_str_rep, val_arg
     );
-    match val_type {
+    match value_type {
         ValueType::UInt => match val_arg.parse::<u64>() {
             Ok(i) => Ok(Value::UInt(i)),
             Err(_) => Err(fmt_err_usage),
@@ -172,19 +184,19 @@ fn parse_value(val_type: ValueType, argument: &str, val_arg: &str) -> Result<Val
     }
 }
 
-fn missing_req_args(req: &ArgumentBookKeeping, command: &str, args: &[ArgConfig], full_args: &str, fmt_usage: &str) -> Result<(), String> {
+fn missing_req_args(arg_map: &ArgStateTable, command: &str, args: &[ArgConfig], full_args: &str, fmt_usage: &str) -> Result<(), String> {
     let missing: Vec<&ArgConfig> = args.iter()
-        .filter(|&a| req.get(a.config).is_some_and(|val| !val.1))
+        .filter(|&a| a.required && arg_map.get(a.config).is_some_and(|arg| !arg.visited))
         .collect();
     if !missing.is_empty() {
         return Err(format!(
             "Missing required arguments for command `{}`:\n\t{}\n{}\n{}\n{} out of {} required fields missing.\n\nCommand usage:\n\t{}",
             command,
             missing.iter().map(|arg| 
-                if arg.value != ValueType::None { format!("{} <{}>", arg.config, arg.value.as_str()) }
+                if arg.value.is_some() { format!("{} <{}>", arg.config, arg.value.as_str()) }
                 else { arg.config.to_string() }
             ).collect::<Vec<_>>().join("\n\t"),
-            full_args, "~".repeat(full_args.len()), missing.len(), req.len(), fmt_usage
+            full_args, "~".repeat(full_args.len()), missing.len(), args.iter().filter(|&a| a.required).count(), fmt_usage
         ));
     }
     Ok(())
@@ -205,44 +217,27 @@ fn handle_value<'a>(expect: &ParseState<'a>, args: &'a[String], i: usize, full_a
 }
 
 fn handle_argument<'a>(
-    req: &mut ArgumentBookKeeping,
-    opt: &mut ArgumentBookKeeping,
+    arg_map: &mut ArgStateTable,
     args: &'a[String], i: usize, fmt_usage: &str
 ) -> Result<Option<ParseState<'a>>, String> {
-    let mut appeared_req = false;
     let arg = args[i].as_str();
-    if let Some(val) = req.get_mut(arg) {
-        if val.1 { 
-            appeared_req = true;
+    if let Some(val) = arg_map.get_mut(arg) {
+        if val.visited {
+            Err(repeated_config_err(args, i))
         } else {
-            val.1 = true;
-            if val.0 != ValueType::None {
-                return Ok(Some(ParseState::ExpectingValue {value_type: val.0, argument: arg}));
-            }
-            return Ok(None);
+            val.visited = true;
+            Ok(val.value_type.is_some().then_some(
+                    ParseState::ExpectingValue {value_type: val.value_type, argument: arg}
+            ))
         }
+    } else {
+        Err(format!("unknown argument `{}`\nExpected usage:\n{}", arg, fmt_usage))
     }
-    if let Some(val) = opt.get_mut(arg) {
-        if val.1 {
-            return Err(repeated_config_err(args, i));
-        } else {
-            val.1 = true;
-            if val.0 != ValueType::None {
-                return Ok(Some(ParseState::ExpectingValue {value_type: val.0, argument: arg}));
-            }
-            return Ok(None);
-        }    
-    }
-    if appeared_req {
-        return Err(repeated_config_err(args, i));
-    }
-    return Err(format!("unknown argument `{}`\nExpected usage:\n{}", arg, fmt_usage));
 }
 
 fn handle_command_values(
     args: &[String],
-    req: &mut ArgumentBookKeeping,
-    opt: &mut ArgumentBookKeeping,
+    arg_map: &mut ArgStateTable,
     _config: &mut Config,
     fmt_usage: &str,
 ) -> Result<(), String> {
@@ -250,7 +245,7 @@ fn handle_command_values(
     let mut state: ParseState = ExpectingArgument;
     for i in 1..args.len() {
         if matches!(state, ExpectingArgument) {
-            if let Some(new_state) = handle_argument(req, opt, args, i, fmt_usage)? {
+            if let Some(new_state) = handle_argument(arg_map, args, i, fmt_usage)? {
                 state = new_state;
             }
         } else {
@@ -267,36 +262,25 @@ fn handle_command_values(
     Ok(())
 }
 
-fn map_entry_check(map: &ArgumentBookKeeping, look_map: Option<&ArgumentBookKeeping>, key: &str, command: &str) -> Result<(), String> {
-    let exists = map.contains_key(&key) || look_map.is_some_and(|m| m.contains_key(&key));
-    if exists {
-        return Err(format!(
-            "Program Error: argument `{}` already exists in arg list for command `{}`.\nNot a problem with the args passed.\nError in argument collection phase of validation.",
-            key, command
-        ));
-    }
-    Ok(())
-}
-
 fn handle_command(command: &CommandSpec, args: &[String], config: &mut Config) -> Result<(), String> {
     let args_entered = join_args(args);
     if let Some(subargs) = command.arguments {
-        let mut required_subargs: ArgumentBookKeeping = HashMap::new();
-        let mut optional_subargs: ArgumentBookKeeping = HashMap::new();
+        let mut arg_map: ArgStateTable = HashMap::new();
         
-        for arg in subargs.iter().filter(|&a| a.required) {
-            map_entry_check(&required_subargs, None, arg.config, command.command)?;
-            required_subargs.insert(arg.config, (arg.value, false));
-        }
-        for arg in subargs.iter().filter(|&a| !a.required) {
-            map_entry_check(&optional_subargs, Some(&required_subargs), arg.config, command.command)?;
-            optional_subargs.insert(arg.config, (arg.value, false));
+        for arg in subargs.iter() {
+            if arg_map.contains_key(arg.config) {
+                return Err(format!(
+                    "Program Error: argument `{}` already exists in arg list for command `{}`.\nNot a problem with the args passed.\nError in argument collection phase of validation.",
+                    arg.config, command.command
+                ));
+            }
+            arg_map.insert(arg.config, ArgumentState {value_type: arg.value, visited: false});
         }
         
         let arg_configs = Vec::from(subargs);
         let fmt_usage = format_command((String::from(command.command), arg_configs));
-        handle_command_values(args, &mut required_subargs, &mut optional_subargs, config, &fmt_usage)?;
-        missing_req_args(&required_subargs, &args[0], subargs, &args_entered, &fmt_usage)?;
+        handle_command_values(args, &mut arg_map, config, &fmt_usage)?;
+        missing_req_args(&arg_map, &args[0], subargs, &args_entered, &fmt_usage)?;
     }
     else if args.len() > 1 {
         let cmd_len = args[0].len() + 1;
