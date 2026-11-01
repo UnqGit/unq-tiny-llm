@@ -1,4 +1,3 @@
-#![allow(warnings)]
 use std::fs;
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
