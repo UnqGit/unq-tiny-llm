@@ -2,14 +2,12 @@ use std::{collections::HashMap, path::PathBuf};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 enum ValueType {
-    None,
     Path,
     UInt,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Value {
-    None,
     UInt(u64),
     Path(PathBuf),
 }
@@ -27,7 +25,7 @@ enum ParseState<'a> {
 struct ArgConfig<'a> {
     config: &'a str,
     required: bool,
-    value: ValueType,
+    value: Option<ValueType>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -38,14 +36,14 @@ struct CommandSpec<'a> {
 
 #[derive(Clone, Copy, Debug)]
 struct ArgumentState {
-    value_type: ValueType,
+    value_type: Option<ValueType>,
     visited: bool,
 }
 
 #[derive(Clone, Debug)]
 pub struct ArgValue {
     pub argument: String,
-    pub value: Value,
+    pub value: Option<Value>,
 }
 
 #[derive(Clone, Debug)]
@@ -59,23 +57,16 @@ type ArgumentRegistry<'a> = HashMap<&'a str, ArgumentState>;
 impl ValueType {
     fn as_str(&self) -> &'static str {
         match self {
-            ValueType::None => "",
             ValueType::UInt => "unsigned integer",
             ValueType::Path => "path",
         }
     }
-    fn is_none(&self) -> bool {
-        matches!(&self, ValueType::None)
-    }
-    fn is_some(&self) -> bool {
-        !self.is_none()
-    }
 }
 
 static PREPROCESSING_ARGUMENTS: &[ArgConfig] = &[
-    ArgConfig { config: "--vocab-size",     required: true,  value: ValueType::UInt },
-    ArgConfig { config: "--dataset",        required: false, value: ValueType::Path },
-    ArgConfig { config: "--min-pair-freq",  required: false, value: ValueType::UInt },
+    ArgConfig { config: "--vocab-size",     required: true,  value: Some(ValueType::UInt) },
+    ArgConfig { config: "--dataset",        required: false, value: Some(ValueType::Path) },
+    ArgConfig { config: "--min-pair-freq",  required: false, value: Some(ValueType::UInt) },
 ];
 
 static COMMANDS: &[CommandSpec] = &[
@@ -98,7 +89,7 @@ fn format_arguments<'a>(args: &[ArgConfig<'a>]) -> String {
     args.iter()
         .map(|arg| {
             let a_name = arg.config;
-            let fmt_val_names = if arg.value.is_none() { String::new() } else { format!(" <{}>", arg.value.as_str()) };
+            let fmt_val_names = if let Some(val) = arg.value { format!(" <{}>", val.as_str()) } else { String::new() };
             match arg.required {
                 false => format!("[{}{}]", a_name,  fmt_val_names),
                 true => format!("{}{}", a_name, fmt_val_names),
@@ -192,7 +183,6 @@ fn parse_value(value_type: ValueType, argument: &str, val_arg: &str) -> Result<V
             Ok(p) => Ok(Value::Path(p)),
             Err(_) => Err(fmt_err_usage),
         }
-        ValueType::None => unreachable!(),
     }
 }
 
@@ -205,7 +195,7 @@ fn missing_req_args(arg_map: &ArgumentRegistry, command: &str, args: &[ArgConfig
             "Missing required arguments for command `{}`:\n\t{}\n{}\n{}\n{} out of {} required fields missing.\n\nCommand usage:\n\t{}",
             command,
             missing.iter().map(|arg| 
-                if arg.value.is_some() { format!("{} <{}>", arg.config, arg.value.as_str()) }
+                if let Some(val) = arg.value { format!("{} <{}>", arg.config, val.as_str()) }
                 else { arg.config.to_string() }
             ).collect::<Vec<_>>().join("\n\t"),
             full_args, "~".repeat(full_args.len()), missing.len(), args.iter().filter(|&a| a.required).count(), fmt_usage
@@ -219,7 +209,7 @@ fn handle_value<'a>(expect: &ParseState<'a>, args: &'a[String], i: usize, full_a
         value_type: expect_val,
         argument: expect_val_for
     } = expect else {
-        unreachable!("`handle_value` is called in the wrong parsing state.\nState is `ExpectingArgument`; expected `ExpectingValue`");
+        return Err(String::from("Program Error: `handle_value` is called in the wrong parsing state.\nState is `ExpectingArgument`; expected `ExpectingValue`"));
     };
     let arg = args[i].as_str();
     match parse_value(*expect_val, expect_val_for, arg) {
@@ -231,30 +221,25 @@ fn handle_value<'a>(expect: &ParseState<'a>, args: &'a[String], i: usize, full_a
     }
 }
 
-fn handle_argument<'a>(
-    arg_map: &mut ArgumentRegistry,
-    args: &'a[String], i: usize, fmt_usage: &str
-) -> Result<Option<ParseState<'a>>, String> {
+fn handle_argument<'a>(arg_map: &mut ArgumentRegistry, args: &'a[String], i: usize, fmt_usage: &str)
+-> Result<Option<ParseState<'a>>, String> {
     let arg = args[i].as_str();
-    if let Some(val) = arg_map.get_mut(arg) {
-        if val.visited {
-            Err(repeated_config_err(args, i))
-        } else {
-            val.visited = true;
-            Ok(val.value_type.is_some().then_some(
-                    ParseState::ExpectingValue {value_type: val.value_type, argument: arg}
-            ))
-        }
+    let Some(val) = arg_map.get_mut(arg) else {
+        return Err(format!("unknown argument `{}`\nExpected usage:\n{}", arg, fmt_usage));
+    };
+    if val.visited {
+        Err(repeated_config_err(args, i))
     } else {
-        Err(format!("unknown argument `{}`\nExpected usage:\n{}", arg, fmt_usage))
+        val.visited = true;
+        Ok(match val.value_type {
+            None => None,
+            Some(value) => Some(ParseState::ExpectingValue {value_type: value, argument: arg}),
+        })
     }
 }
 
-fn handle_command_values<'a>(
-    args: &'a[String],
-    arg_map: &mut ArgumentRegistry<'a>,
-    fmt_usage: &'a str,
-) -> Result<Vec<ArgValue>, String> {
+fn handle_command_values<'a>(args: &'a[String], arg_map: &mut ArgumentRegistry<'a>, fmt_usage: &'a str)
+-> Result<Vec<ArgValue>, String> {
     let full_args = join_args(args);
     let mut values: Vec<ArgValue> = Vec::new();
     let mut state: ParseState = ParseState::ExpectingArgument;
@@ -263,10 +248,13 @@ fn handle_command_values<'a>(
             if let Some(new_state) = handle_argument(arg_map, args, i, fmt_usage)? {
                 state = new_state;
             }
-            values.push(ArgValue { argument: args[i].clone(), value: Value::None });
+            values.push(ArgValue { argument: args[i].clone(), value: None });
         } else {
             let value = handle_value(&state, args, i, &full_args)?;
-            values.last_mut().unwrap().value = value;
+            let Some(last) = values.last_mut() else {
+                return Err(format!("Program Error: "));
+            };
+            last.value = Some(value);
             state = ParseState::ExpectingArgument;
         }
     }
