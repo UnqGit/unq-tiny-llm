@@ -1,3 +1,6 @@
 pub mod commands;
-pub mod cli;
 pub mod handle;
+pub mod config;
+mod types;
+mod format;
+mod hint;

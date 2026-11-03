@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 #[derive(Clone, Debug, Deserialize)]
 pub struct Config {
     pub paths: PathConfig,
-    pub training: TrainingConfig,
+    pub pre_processing: PreprocessingConfig,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -15,7 +15,7 @@ pub struct PathConfig {
 }
 
 #[derive(Clone, Copy, Debug, Deserialize)]
-pub struct TrainingConfig {
+pub struct PreprocessingConfig {
     pub vocab_size: usize,
     pub min_pair_freq: usize,
 }

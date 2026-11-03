@@ -1,164 +1,8 @@
-use std::{collections::HashMap, path::PathBuf};
-
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-enum ValueType {
-    Path,
-    UInt,
-}
-
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub enum Value {
-    UInt(u64),
-    Path(PathBuf),
-}
-
-#[derive(Clone, Copy, Debug)]
-enum ParseState<'a> {
-    ExpectingArgument,
-    ExpectingValue {
-        value_type: ValueType,
-        argument: &'a str,
-    },
-}
-
-#[derive(Clone, Copy, Debug)]
-struct ArgConfig<'a> {
-    config: &'a str,
-    required: bool,
-    value: Option<ValueType>,
-}
-
-#[derive(Clone, Copy, Debug)]
-struct CommandSpec<'a> {
-    command: &'a str,
-    arguments: Option<&'a [ArgConfig<'a>]>,
-}
-
-#[derive(Clone, Copy, Debug)]
-struct ArgumentState {
-    value_type: Option<ValueType>,
-    visited: bool,
-}
-
-#[derive(Clone, Debug)]
-pub struct ArgValue {
-    pub argument: String,
-    pub value: Option<Value>,
-}
-
-#[derive(Clone, Debug)]
-pub struct ParsedCommand {
-    pub command: String,
-    pub updated_args: Vec<ArgValue>,
-}
-
-type ArgumentRegistry<'a> = HashMap<&'a str, ArgumentState>;
-
-impl ValueType {
-    fn as_str(&self) -> &'static str {
-        match self {
-            ValueType::UInt => "unsigned integer",
-            ValueType::Path => "path",
-        }
-    }
-}
-
-static PREPROCESSING_ARGUMENTS: &[ArgConfig] = &[
-    ArgConfig { config: "--vocab-size",     required: true,  value: Some(ValueType::UInt) },
-    ArgConfig { config: "--dataset",        required: false, value: Some(ValueType::Path) },
-    ArgConfig { config: "--min-pair-freq",  required: false, value: Some(ValueType::UInt) },
-];
-
-static COMMANDS: &[CommandSpec] = &[
-    CommandSpec { command: "-pre-processing", arguments: Some(PREPROCESSING_ARGUMENTS) },
-];
-
-fn collect_commands<'a>() -> Vec<(String, Vec<ArgConfig<'a>>)> {
-    COMMANDS.iter()
-        .map(|argm| {
-            let cmd_name = argm.command.to_string();
-            let cfgs = match argm.arguments {
-                Some(a) => Vec::from(a),
-                None => Vec::new(),
-            };
-            (cmd_name, cfgs)
-        }).collect()
-}
-
-fn format_arguments<'a>(args: &[ArgConfig<'a>]) -> String {
-    args.iter()
-        .map(|arg| {
-            let a_name = arg.config;
-            let fmt_val_names = if let Some(val) = arg.value { format!(" <{}>", val.as_str()) } else { String::new() };
-            match arg.required {
-                false => format!("[{}{}]", a_name,  fmt_val_names),
-                true => format!("{}{}", a_name, fmt_val_names),
-            }
-        })
-        .collect::<Vec<_>>()
-        .join(" ")
-}
-
-fn format_command(command: (String, Vec<ArgConfig>)) -> String {
-    let (cmd, cfgs) = command;
-    if cfgs.is_empty() {
-        return cmd;
-    }
-    format!("{}\t{}", cmd, format_arguments(&cfgs))
-}
-
-fn format_commands<'a>(commands: &'a [(String, Vec<ArgConfig>)]) -> String {
-    commands.iter().map(|f| format_command(f.clone())).collect::<Vec<_>>().join("\n")
-}
-
-fn command_hint() -> String {
-    let res = collect_commands();
-    format_commands(&res)
-}
-
-fn usage_hint() -> String {
-    let mut result = "Usage: cargo run -- <command> <arguments>".to_string();
-
-    let commands: Vec<String> = COMMANDS
-        .iter()
-        .map(|arg| arg.command.to_string())
-        .collect();
-
-    result += format!("\n\nAvailable commands:\n\t{}", commands.join("\n\t")).as_str();
-    result += format!("\n\nCommand Usage:\n\t{}", command_hint()).as_str();
-
-    result
-}
-
-fn is_first_char_alpha(s: &str) -> bool {
-    s.chars().next().map_or(false, |c| c.is_ascii_alphabetic())
-}
-
-fn join_args(args: &[String]) -> String {
-    args.iter()
-        .map(|s|
-            if is_first_char_alpha(s) {
-                format!("\"{}\"", s)
-            } else {
-                s.clone()
-            }
-        )
-        .collect::<Vec<_>>()
-        .join(" ")
-}
-
-fn args_space_separated_len(args: &[String], i: usize) -> usize {
-    args[0..i]
-        .iter()
-        .fold(0, |l, s| l + s.len() + 1 + 
-            if is_first_char_alpha(s) { 2 }
-            else { 0 }
-        )
-}
-
-fn repeated_underline(arg: &str) -> String {
-    "~".repeat(arg.len() + if is_first_char_alpha(arg) { 2 } else { 0 })
-}
+use crate::cli::types::*;
+use crate::cli::format::{args_space_separated_len, join_args, repeated_underline, format_command};
+use crate::cli::config::schema::COMMANDS;
+use crate::cli::hint::{command_hint, usage_hint};
+use std::{path::PathBuf, collections::HashMap};
 
 fn repeated_config_err(args: &[String], i: usize) -> String {
     let len = args_space_separated_len(args, i);
@@ -166,24 +10,6 @@ fn repeated_config_err(args: &[String], i: usize) -> String {
         "argument `{}` for command `{}` already provided:\n{}\n{} -- repeated argument",
         args[i], args[0], join_args(args), " ".repeat(len) + &"~".repeat(args[i].len())
     )
-}
-
-fn parse_value(value_type: ValueType, argument: &str, val_arg: &str) -> Result<Value, String> {
-    let val_str_rep = value_type.as_str();
-    let fmt_err_usage = format!(
-        "Could not parse <{}> from `{}`.\nArgument `{}` expected <{}>, got `{}`.",
-        val_str_rep, val_arg, argument, val_str_rep, val_arg
-    );
-    match value_type {
-        ValueType::UInt => match val_arg.parse::<u64>() {
-            Ok(i) => Ok(Value::UInt(i)),
-            Err(_) => Err(fmt_err_usage),
-        },
-        ValueType::Path => match val_arg.parse::<PathBuf>() {
-            Ok(p) => Ok(Value::Path(p)),
-            Err(_) => Err(fmt_err_usage),
-        }
-    }
 }
 
 fn missing_req_args(arg_map: &ArgumentRegistry, command: &str, args: &[ArgConfig], full_args: &str, fmt_usage: &str) -> Result<(), String> {
@@ -202,6 +28,24 @@ fn missing_req_args(arg_map: &ArgumentRegistry, command: &str, args: &[ArgConfig
         ));
     }
     Ok(())
+}
+
+fn parse_value(value_type: ValueType, argument: &str, val_arg: &str) -> Result<Value, String> {
+    let val_str_rep = value_type.as_str();
+    let fmt_err_usage = format!(
+        "Could not parse <{}> from `{}`.\nArgument `{}` expected <{}>, got `{}`.",
+        val_str_rep, val_arg, argument, val_str_rep, val_arg
+    );
+    match value_type {
+        ValueType::UInt => match val_arg.parse::<usize>() {
+            Ok(i) => Ok(Value::UInt(i)),
+            Err(_) => Err(fmt_err_usage),
+        },
+        ValueType::Path => match val_arg.parse::<PathBuf>() {
+            Ok(p) => Ok(Value::Path(p)),
+            Err(_) => Err(fmt_err_usage),
+        }
+    }
 }
 
 fn handle_value<'a>(expect: &ParseState<'a>, args: &'a[String], i: usize, full_args: &str) -> Result<Value, String> {
@@ -238,7 +82,7 @@ fn handle_argument<'a>(arg_map: &mut ArgumentRegistry, args: &'a[String], i: usi
     }
 }
 
-fn handle_command_values<'a>(args: &'a[String], arg_map: &mut ArgumentRegistry<'a>, fmt_usage: &'a str)
+fn parse_command_values<'a>(args: &'a[String], arg_map: &mut ArgumentRegistry<'a>, fmt_usage: &'a str)
 -> Result<Vec<ArgValue>, String> {
     let full_args = join_args(args);
     let mut values: Vec<ArgValue> = Vec::new();
@@ -267,7 +111,7 @@ fn handle_command_values<'a>(args: &'a[String], arg_map: &mut ArgumentRegistry<'
     Ok(values)
 }
 
-fn handle_command<'a>(command: &'a CommandSpec, args: &'a [String]) -> Result<Vec<ArgValue>, String> {
+fn parse_command<'a>(command: &'a CommandSpec, args: &'a [String]) -> Result<Vec<ArgValue>, String> {
     let args_entered = join_args(args);
     if let Some(subargs) = command.arguments {
         let mut arg_map: ArgumentRegistry = HashMap::new();
@@ -284,7 +128,7 @@ fn handle_command<'a>(command: &'a CommandSpec, args: &'a [String]) -> Result<Ve
         
         let arg_configs = Vec::from(subargs);
         let fmt_usage = format_command((String::from(command.command), arg_configs));
-        let updated_arguments = handle_command_values(args, &mut arg_map, &fmt_usage)?;
+        let updated_arguments = parse_command_values(args, &mut arg_map, &fmt_usage)?;
         missing_req_args(&arg_map, &args[0], subargs, &args_entered, &fmt_usage)?;
         return Ok(updated_arguments);
     }
@@ -298,9 +142,9 @@ fn handle_command<'a>(command: &'a CommandSpec, args: &'a [String]) -> Result<Ve
     Ok(Vec::new())
 }
 
-pub fn handle_args(args: &[String]) -> Result<ParsedCommand, String> {
+pub fn parse_arguments(args: &[String]) -> Result<ParsedCommand, String> {
     if args.is_empty() {
-        return Err(usage_hint());
+        return Err(format!("No arguments were passed.\n{}", usage_hint()));
     }
 
     let command = &args[0];
@@ -308,6 +152,6 @@ pub fn handle_args(args: &[String]) -> Result<ParsedCommand, String> {
         .ok_or_else(|| format!("No command '{}' exists.\n\nAvailable commands:\n\t{}", command, command_hint()))?;
 
     let cmd = &COMMANDS[cmd_idx];
-    let updated_arguments = handle_command(cmd, &args)?;
+    let updated_arguments = parse_command(cmd, &args)?;
     Ok(ParsedCommand { command: command.clone(), updated_args: updated_arguments})
 }
