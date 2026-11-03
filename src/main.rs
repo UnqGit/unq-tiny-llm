@@ -1,5 +1,6 @@
 mod cli;
 mod config;
+mod loader;
 
 use config::Config;
 use cli::{handle::parse_arguments, config::update_config};
@@ -36,6 +37,7 @@ fn main() {
             }
         }
     }
+
 
     println!("Final configurations: \n\n{:#?}\n", config);
 }
