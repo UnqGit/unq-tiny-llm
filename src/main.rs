@@ -1,9 +1,10 @@
 mod cli;
 mod config;
 mod loader;
+mod tokenizer;
 
 use config::Config;
-use cli::{handle::parse_arguments, config::update_config};
+use cli::{handle::parse_arguments, config::update_config, commands::run_command};
 use std::{env, process, path::Path};
 
 fn main() {
@@ -40,4 +41,6 @@ fn main() {
 
 
     println!("Final configurations: \n\n{:#?}\n", config);
+    println!("==================================Running commands==================================\n\n");
+    run_command(&config, &args[0]);
 }
