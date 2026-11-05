@@ -11,7 +11,7 @@ fn train_and_save(
     min_pair_freq: usize,
     path: impl AsRef<Path>
 ) -> Result<(), String> {
-    let tokenizer = training::no_alloc::bpe_training(text, vocab_size, min_pair_freq)?;
+    let tokenizer = training::min_alloc::bpe_training(text, vocab_size, min_pair_freq)?;
     save_tokenizer(&tokenizer, path)
 }
 

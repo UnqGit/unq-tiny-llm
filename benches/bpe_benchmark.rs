@@ -31,7 +31,7 @@ fn benchmark_bpe(c: &mut Criterion) {
 
     group.bench_function("Optimized Pair Counting + Token Sequence Update", |b| {
         b.iter(|| {
-            let _ = training::no_alloc::bpe_training(black_box(&base_content), black_box(vocab_size), black_box(min_pair_freq));
+            let _ = training::min_alloc::bpe_training(black_box(&base_content), black_box(vocab_size), black_box(min_pair_freq));
         });
     });
 
