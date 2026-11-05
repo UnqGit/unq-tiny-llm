@@ -2,8 +2,9 @@ use crate::config::Config;
 
 pub mod internal {
     use crate::config::Config;
-    use crate::tokenizer::bpe::trainer::train_and_save;
+    // use crate::tokenizer::bpe::trainer::train_and_save;
     use crate::loader::load_data;
+    use crate::tokenizer::bpe::training;
     use std::cmp::min;
 
     pub fn run_preprocessing(config: &Config) {
@@ -33,12 +34,32 @@ pub mod internal {
         let boundary = content.floor_char_boundary(max_bytes);
         println!("Size of the content: {}\nPreview of the text:\n{}\n", content.len(), &content[..boundary]);
     
-        let Err(err) = train_and_save(&content, config.pre_processing.vocab_size, config.pre_processing.min_pair_freq, config.paths.tokenizer.clone())
-        else {
-            println!("Pre processing successfully completed and data is succesfully saved.");
-            return;
-        };
-        eprintln!("Error occured during preprocessing of data:\n{}", err);
+        let impl1 = training::bpe_training(&content, config.pre_processing.vocab_size, config.pre_processing.min_pair_freq);
+        match impl1 {
+            Ok(_) => println!("Tokenization using naive implementation was successfully completed."),
+            Err(ref err) => eprintln!("Error occured during preprocessing of data by the naive implementation:\n{}", err),
+        }
+        let impl2 = training::bpe_training_pair_count_optimized(&content, config.pre_processing.vocab_size, config.pre_processing.min_pair_freq);
+        match impl2 {
+            Ok(_) => println!("Tokenization using pair count optimized implementation was successfully completed."),
+            Err(ref err) => eprintln!("Error occured during preprocessing of data by the pair count optimized implementation:\n{}", err),
+        }
+
+        if impl1.is_ok() && impl2.is_ok() {
+            let tokenizer1 = impl1.unwrap();
+            let tokenizer2 = impl2.unwrap();
+            if tokenizer1.vocab != tokenizer2.vocab || tokenizer1.merges != tokenizer2.merges {
+                eprintln!("Error: The two implementations produced different results.");
+            } else {
+                println!("Both implementations produced the same result.");
+            }
+        }
+        // let Err(err) = train_and_save(&content, config.pre_processing.vocab_size, config.pre_processing.min_pair_freq, config.paths.tokenizer.clone())
+        // else {
+        //     println!("Pre processing successfully completed and data is succesfully saved.");
+        //     return;
+        // };
+        // eprintln!("Error occured during preprocessing of data:\n{}", err);
     }
 }
 
