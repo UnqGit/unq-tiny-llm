@@ -1,6 +1,6 @@
 use crate::config::Config;
 
-pub mod internal {
+mod internal {
     use crate::config::Config;
     use crate::tokenizer::bpe::trainer::train_and_save;
     use crate::loader::load_data;
@@ -34,15 +34,15 @@ pub mod internal {
         let boundary = content.floor_char_boundary(max_bytes);
         println!("Size of the content: {}\nPreview of the text:\n{}\n", content.len(), &content[..boundary]);
     
-        let impl1 = training::bpe_training(&content, config.tokenizer.vocab_size, config.tokenizer.min_pair_freq);
+        let impl1 = training::naive::bpe_training(&content, config.tokenizer.vocab_size, config.tokenizer.min_pair_freq);
         match impl1 {
             Ok(_) => println!("Tokenization using naive implementation was successfully completed."),
             Err(ref err) => eprintln!("Error occured during tokenization of data by the naive implementation:\n{}", err),
         }
-        let impl2 = training::bpe_training_token_seq_update_optimized(&content, config.tokenizer.vocab_size, config.tokenizer.min_pair_freq);
+        let impl2 = training::optimization::token_update::bpe_training(&content, config.tokenizer.vocab_size, config.tokenizer.min_pair_freq);
         match impl2 {
-            Ok(_) => println!("Tokenization using pair count optimized implementation was successfully completed."),
-            Err(ref err) => eprintln!("Error occured during tokenization of data by the pair count optimized implementation:\n{}", err),
+            Ok(_) => println!("Tokenization using token update optimized implementation was successfully completed."),
+            Err(ref err) => eprintln!("Error occured during tokenization of data by the token update optimized implementation:\n{}", err),
         }
 
         if impl1.is_ok() && impl2.is_ok() {

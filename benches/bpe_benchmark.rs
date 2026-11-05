@@ -23,19 +23,19 @@ fn benchmark_bpe(c: &mut Criterion) {
 
     c.bench_function("bpe_training", |b| {
         b.iter(|| {
-            let _ = training::bpe_training(black_box(&base_content), black_box(vocab_size), black_box(min_pair_freq));
+            let _ = training::naive::bpe_training(black_box(&base_content), black_box(vocab_size), black_box(min_pair_freq));
         });
     });
 
     c.bench_function("bpe_training_pair_count_optimized", |b| {
         b.iter(|| {
-            let _ = training::bpe_training_pair_count_optimized(black_box(&base_content), black_box(vocab_size), black_box(min_pair_freq));
+            let _ = training::optimization::count_pair::bpe_training(black_box(&base_content), black_box(vocab_size), black_box(min_pair_freq));
         });
     });
 
     c.bench_function("bpe_training_token_seq_update_optimized", |b| {
         b.iter(|| {
-            let _ = training::bpe_training_token_seq_update_optimized(black_box(&base_content), black_box(vocab_size), black_box(min_pair_freq));
+            let _ = training::optimization::token_update::bpe_training(black_box(&base_content), black_box(vocab_size), black_box(min_pair_freq));
         });
     });
 }
