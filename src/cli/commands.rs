@@ -39,10 +39,10 @@ mod internal {
             Ok(_) => println!("Tokenization using naive implementation was successfully completed."),
             Err(ref err) => eprintln!("Error occured during tokenization of data by the naive implementation:\n{}", err),
         }
-        let impl2 = training::optimization::token_update::bpe_training(&content, config.tokenizer.vocab_size, config.tokenizer.min_pair_freq);
+        let impl2 = training::optimization::no_alloc::bpe_training(&content, config.tokenizer.vocab_size, config.tokenizer.min_pair_freq);
         match impl2 {
-            Ok(_) => println!("Tokenization using token update optimized implementation was successfully completed."),
-            Err(ref err) => eprintln!("Error occured during tokenization of data by the token update optimized implementation:\n{}", err),
+            Ok(_) => println!("Tokenization using no-alloc optimized implementation was successfully completed."),
+            Err(ref err) => eprintln!("Error occured during tokenization of data by the no-alloc optimized implementation:\n{}", err),
         }
 
         if impl1.is_ok() && impl2.is_ok() {
