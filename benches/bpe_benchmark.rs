@@ -21,29 +21,21 @@ fn benchmark_bpe(c: &mut Criterion) {
     let DataLoadResult { contents, .. } = text;
     let base_content = contents.join("\n\0\n");
 
-    c.bench_function("Naive BPE Training", |b| {
+    let mut group = c.benchmark_group("BPE Training");
+
+    group.bench_function("Naive", |b| {
         b.iter(|| {
             let _ = training::naive::bpe_training(black_box(&base_content), black_box(vocab_size), black_box(min_pair_freq));
         });
     });
 
-    c.bench_function("BPE Training with Optimized Pair Counting", |b| {
+    group.bench_function("Optimized Pair Counting + Token Sequence Update", |b| {
         b.iter(|| {
-            let _ = training::optimization::count_pair::bpe_training(black_box(&base_content), black_box(vocab_size), black_box(min_pair_freq));
+            let _ = training::no_alloc::bpe_training(black_box(&base_content), black_box(vocab_size), black_box(min_pair_freq));
         });
     });
 
-    c.bench_function("BPE Training with Optimized Token Sequence Update", |b| {
-        b.iter(|| {
-            let _ = training::optimization::token_update::bpe_training(black_box(&base_content), black_box(vocab_size), black_box(min_pair_freq));
-        });
-    });
-
-    c.bench_function("BPE Training with Optimized Pair Counting and Token Sequence Update", |b| {
-        b.iter(|| {
-            let _ = training::optimization::no_alloc::bpe_training(black_box(&base_content), black_box(vocab_size), black_box(min_pair_freq));
-        });
-    });
+    group.finish();
 }
 
 criterion_group!(benches, benchmark_bpe);
