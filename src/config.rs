@@ -5,17 +5,17 @@ use std::path::{Path, PathBuf};
 #[derive(Clone, Debug, Deserialize)]
 pub struct Config {
     pub paths: PathConfig,
-    pub pre_processing: PreprocessingConfig,
+    pub tokenizer: TokenizerConfig,
 }
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct PathConfig {
-    pub tokenizer: PathBuf,
+    pub tokenizer_save: PathBuf,
     pub training_dataset:  PathBuf,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize)]
-pub struct PreprocessingConfig {
+pub struct TokenizerConfig {
     pub vocab_size: usize,
     pub min_pair_freq: usize,
 }

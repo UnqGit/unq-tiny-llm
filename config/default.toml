@@ -1,7 +1,7 @@
 [paths]
-tokenizer = "data/training/tokenizer.json"
+tokenizer_save = "data/training/tokenizer.json"
 training_dataset = "data/dataset/"
 
-[pre_processing]
+[tokenizer]
 vocab_size = 1000
 min_pair_freq = 2
