@@ -39,7 +39,7 @@ pub mod internal {
             Ok(_) => println!("Tokenization using naive implementation was successfully completed."),
             Err(ref err) => eprintln!("Error occured during tokenization of data by the naive implementation:\n{}", err),
         }
-        let impl2 = training::bpe_training_pair_count_optimized(&content, config.tokenizer.vocab_size, config.tokenizer.min_pair_freq);
+        let impl2 = training::bpe_training_token_seq_update_optimized(&content, config.tokenizer.vocab_size, config.tokenizer.min_pair_freq);
         match impl2 {
             Ok(_) => println!("Tokenization using pair count optimized implementation was successfully completed."),
             Err(ref err) => eprintln!("Error occured during tokenization of data by the pair count optimized implementation:\n{}", err),

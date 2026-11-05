@@ -172,48 +172,51 @@ pub fn bpe_training_pair_count_optimized(text: &str, vocab_size: usize, min_pair
         // it was checked that both implementations produce the same results
         // let expected = pair_count(&token_seq);
         // assert_eq!(token_pair, expected);
-
+        
         merges.push(Merge { left: pair.0, right: pair.1, merged: new_vocab_word.id });
         vocab.push(new_vocab_word);
     }
-
+    
     Ok(BpeTokenizer { vocab, merges })
 }
 
 fn update_sequence(pair: (TokenId, TokenId), new_id: TokenId, token_sequence: &mut Vec<TokenId>) {
     let len = token_sequence.len();
     let (token_1, token_2) = pair;
+    
+    let mut read: usize = 0;
+    let mut write: usize = 0;
 
-    let mut offset: usize = 0;
-    for i in 0..len {
-        if token_sequence[i] == token_1 && i + 1 < len && token_sequence[i + 1] == token_2 {
-            token_sequence[i - offset] = new_id;
-            offset += 1;
+    while read < len {
+        if token_sequence[read] == token_1 && read + 1 < len && token_sequence[read + 1] == token_2 {
+            token_sequence[write] = new_id;
+            read += 2;
+        } else {
+            token_sequence[write] = token_sequence[read];
+            read += 1;
         }
-        else {
-            token_sequence[i - offset] = token_sequence[i];
-        }
+        write += 1;
     }
 
-    token_sequence.truncate(len - offset);
+    token_sequence.truncate(write);
 }
 
 fn bpe_iter_2(token_sequence: &mut Vec<TokenId>, vocab: &[VocabWord], min_pair_freq: usize) -> Option<(VocabWord, Merge)> {
     let pairs_count = count_pairs(token_sequence);
     let most_freq_pair = get_most_freq_pair(&pairs_count, min_pair_freq)?;
     let (token_1, token_2) = most_freq_pair;
-
+    
     let new_word_seq = [
         vocab[token_1].seq.clone(),
         vocab[token_2].seq.clone(),
     ]
     .concat();
-
+    
     let new_vocab_word = VocabWord { seq: new_word_seq, id: vocab.len() };
     let merge = Merge { left: token_1, right: token_2, merged: new_vocab_word.id };
-
+    
     update_sequence(most_freq_pair, new_vocab_word.id, token_sequence);
-
+    
     Some((new_vocab_word, merge))
 }
 
@@ -221,15 +224,15 @@ pub fn bpe_training_token_seq_update_optimized(text: &str, vocab_size: usize, mi
     if text.is_empty() {
         return Err(String::from("Cannot encode text of length 0"));
     }
-
+    
     let mut vocab = get_initial_vocab();
     let mut merges = Vec::new();
     let mut token_sequence = get_init_token_sequence(text.as_bytes());
-
+    
     if (vocab_size) < vocab.len() {
         return Err(format!("Initial vocab of lone letters of size {} exceed the desired 'vocab_size' of {}", vocab.len(), vocab_size));
     }
-
+    
     while (vocab_size) > vocab.len() {
         let Some(seq_tok) = bpe_iter_2(&mut token_sequence, &vocab, min_pair_freq) else {
             break;
@@ -238,5 +241,5 @@ pub fn bpe_training_token_seq_update_optimized(text: &str, vocab_size: usize, mi
         merges.push(seq_tok.1);
     }
 
-    Ok(BpeTokenizer{vocab: vocab, merges: merges})
+    Ok(BpeTokenizer {vocab: vocab, merges: merges})
 }
