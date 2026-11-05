@@ -14,7 +14,7 @@ use unq_tiny_llm::{
 };
 
 fn benchmark_bpe(c: &mut Criterion) {
-    let text = load_data("data/dataset/books/hobbit").expect("Failed to load data for benchmarking.");
+    let text = load_data("data/dataset/songs/snoopdogg").expect("Failed to load data for benchmarking.");
     let vocab_size = 1000;
     let min_pair_freq = 2;
 
@@ -30,6 +30,12 @@ fn benchmark_bpe(c: &mut Criterion) {
     c.bench_function("bpe_training_pair_count_optimized", |b| {
         b.iter(|| {
             let _ = training::bpe_training_pair_count_optimized(black_box(&base_content), black_box(vocab_size), black_box(min_pair_freq));
+        });
+    });
+
+    c.bench_function("bpe_training_token_seq_update_optimized", |b| {
+        b.iter(|| {
+            let _ = training::bpe_training_token_seq_update_optimized(black_box(&base_content), black_box(vocab_size), black_box(min_pair_freq));
         });
     });
 }
