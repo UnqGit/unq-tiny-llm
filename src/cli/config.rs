@@ -5,14 +5,21 @@ pub mod schema {
     use crate::cli::types::{ArgConfig, CommandSpec, ValueType};
 
     pub static TOKENIZER_ARGUMENTS: &[ArgConfig] = &[
-        ArgConfig { config: "--vocab-size",     required: false,  value: Some(ValueType::UInt) },
+        ArgConfig { config: "--vocab-size",     required: false, value: Some(ValueType::UInt) },
         ArgConfig { config: "--dataset",        required: false, value: Some(ValueType::Path) },
         ArgConfig { config: "--min-pair-freq",  required: false, value: Some(ValueType::UInt) },
         ArgConfig { config: "--save",           required: false, value: Some(ValueType::Path) },
     ];
+
+    pub static ENCODER_ARGUMENTS: &[ArgConfig] = &[
+        ArgConfig { config: "--tokenizer", required: false, value: Some(ValueType::Path) },
+        ArgConfig { config: "--dataset",   required: false, value: Some(ValueType::Path) },
+        ArgConfig { config: "--save",      required: false, value: Some(ValueType::Path) },
+    ];
     
     pub static COMMANDS: &[CommandSpec] = &[
         CommandSpec { command: "-tokenizer", arguments: Some(TOKENIZER_ARGUMENTS) },
+        CommandSpec { command: "-encoder", arguments: Some(ENCODER_ARGUMENTS) },
     ];
 }
 
@@ -35,7 +42,7 @@ fn update_tokenizer(config: &mut Config, update_args: &Vec<ArgValue>) -> Result<
                 _ => return Err(unexpected_type_err(&arg.argument, "unsigned integer")),
             },
             "--dataset" => match get_some_argval(arg)? {
-                Value::Path(path) => config.paths.training_dataset = path,
+                Value::Path(path) => config.paths.dataset = path,
                 _ => return Err(unexpected_type_err(&arg.argument, "path")),
             },
             "--min-pair-freq" => match get_some_argval(arg)? {
@@ -43,7 +50,28 @@ fn update_tokenizer(config: &mut Config, update_args: &Vec<ArgValue>) -> Result<
                 _ => return Err(unexpected_type_err(&arg.argument, "unsigned integer")),
             },
             "--save" => match get_some_argval(arg)? {
-                Value::Path(path) => config.paths.tokenizer_save = path,
+                Value::Path(path) => config.paths.tokenizer = path,
+                _ => return Err(unexpected_type_err(&arg.argument, "path")),
+            },
+            _ => return Err(format!("Configuration `{}` not implemented for command `-tokenizer`", arg.argument)),
+        }
+    }
+    Ok(())
+}
+
+fn update_encoder(config: &mut Config, update_args: &Vec<ArgValue>) -> Result<(), String> {
+    for arg in update_args {
+        match arg.argument.as_str() {
+            "--dataset" => match get_some_argval(arg)? {
+                Value::Path(path) => config.paths.dataset = path,
+                _ => return Err(unexpected_type_err(&arg.argument, "path")),
+            },
+            "--tokenizer" => match get_some_argval(arg)? {
+                Value::Path(path) => config.paths.tokenizer = path,
+                _ => return Err(unexpected_type_err(&arg.argument, "path")),
+            },
+            "--save" => match get_some_argval(arg)? {
+                Value::Path(path) => config.paths.encoder = path,
                 _ => return Err(unexpected_type_err(&arg.argument, "path")),
             },
             _ => return Err(format!("Configuration `{}` not implemented for command `-tokenizer`", arg.argument)),
@@ -55,6 +83,7 @@ fn update_tokenizer(config: &mut Config, update_args: &Vec<ArgValue>) -> Result<
 pub fn update_config(config: &mut Config, update_values: &ParsedCommand) -> Result<(), String> {
     match update_values.command.as_str() {
         "-tokenizer" => update_tokenizer(config, &update_values.updated_args),
+        "-encoder" => update_encoder(config, &update_values.updated_args),
         _ => Err(format!("Command: {} not implemented.", update_values.command)),
     }
 }

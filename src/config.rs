@@ -10,8 +10,10 @@ pub struct Config {
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct PathConfig {
-    pub tokenizer_save: PathBuf,
-    pub training_dataset:  PathBuf,
+    pub dataset: PathBuf,
+
+    pub tokenizer: PathBuf,
+    pub encoder: PathBuf,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize)]

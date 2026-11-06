@@ -39,7 +39,6 @@ fn bpe_iter(token_sequences: &[Vec<TokenId>], min_pair_freq: usize, new_id: Toke
     Some((result_seq, merge))
 }
 
-#[allow(unused)]
 pub fn bpe_training(pretokens: &PreTokens, vocab_size: usize, min_pair_freq: usize) -> Result<BpeTokenizer, String> {
     let mut curr_vocab_size: TokenId = 256; // initial vocab consisting of all possible bytes
     let mut merges = Vec::new();

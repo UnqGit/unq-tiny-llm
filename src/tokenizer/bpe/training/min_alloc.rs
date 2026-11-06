@@ -4,7 +4,7 @@ use crate::tokenizer::bpe::training::internal::*;
 use crate::tokenizer::initial::*;
 use crate::tokenizer::preprocessing::PreTokens;
 
-fn update_sequence(pair: (TokenId, TokenId), new_id: TokenId, token_sequence: &mut [TokenId], len: &mut usize) {
+pub fn update_sequence(pair: (TokenId, TokenId), new_id: TokenId, token_sequence: &mut [TokenId], len: &mut usize) {
     let (token_1, token_2) = pair;
 
     let mut read: usize = 0;

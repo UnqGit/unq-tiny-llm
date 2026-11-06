@@ -23,7 +23,7 @@ pub fn format_command(command: (String, Vec<ArgConfig>)) -> String {
 }
 
 pub fn format_commands<'a>(commands: &'a [(String, Vec<ArgConfig>)]) -> String {
-    commands.iter().map(|f| format_command(f.clone())).collect::<Vec<_>>().join("\n")
+    commands.iter().map(|f| format_command(f.clone())).collect::<Vec<_>>().join("\n\t")
 }
 
 pub fn join_args(args: &[String]) -> String {

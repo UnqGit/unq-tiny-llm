@@ -5,6 +5,7 @@ use crate::config::Config;
 
 use crate::loader::load_data;
 
+use crate::tokenizer::bpe::types::BpeTokenizer;
 use crate::tokenizer::preprocessing;
 use crate::tokenizer::bpe::training;
 use crate::tokenizer::bpe::serialization::save_tokenizer;
@@ -14,17 +15,34 @@ fn train_and_save(
     vocab_size: usize,
     min_pair_freq: usize,
     path: impl AsRef<Path>
-) -> Result<(), String> {
+) -> Result<BpeTokenizer, String> {
     let tokenizer = training::min_alloc::bpe_training(pretokens, vocab_size, min_pair_freq)?;
-    debug_assert!(
-        tokenizer == training::naive::bpe_training(pretokens, vocab_size, min_pair_freq)?,
-        "Optimized tokenizer differed from the naive implementation."
-    );
-    save_tokenizer(&tokenizer, path)
+
+    debug_assert!({
+        let res = training::naive::bpe_training(
+            pretokens,
+            vocab_size,
+            min_pair_freq
+        )?;
+
+        if tokenizer != res {
+            panic!(
+                "Optimized tokenizer differed from the naive implementation:\n\
+                Optimized:\n{:#?}\n\
+                Naive:\n{:#?}",
+                tokenizer,
+                res
+            );
+        }
+
+        true
+    });
+    save_tokenizer(&tokenizer, path)?;
+    Ok(tokenizer)
 }
 
 pub fn run_tokenizer(config: &Config) {
-    let data = match load_data(&config.paths.training_dataset) {
+    let data = match load_data(&config.paths.dataset) {
         Ok(data) => data,
         Err(err) => {
             eprintln!("{err}");
@@ -55,9 +73,12 @@ pub fn run_tokenizer(config: &Config) {
         pretokens.chunks.iter().take(10).map(|r| &pretokens.text[r.clone()]).collect::<Vec<_>>()
     );
 
-    let result = train_and_save(&pretokens, config.tokenizer.vocab_size, config.tokenizer.min_pair_freq, &config.paths.tokenizer_save);
+    let result = train_and_save(&pretokens, config.tokenizer.vocab_size, config.tokenizer.min_pair_freq, &config.paths.tokenizer);
     match result {
         Err(err) => eprintln!("Error occured during tokenization of data:\n{}", err),
-        Ok(_) => println!("Tokenizer training successfully completed and data is succesfully saved."),
+        Ok(tok) => {
+            println!("Tokenizer training successfully completed and data is succesfully saved.");
+            println!("Few merged tokens:\n{:#?}...", tok.merges.iter().take(5).collect::<Vec<_>>());
+        },
     }
 }

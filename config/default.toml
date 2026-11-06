@@ -1,6 +1,7 @@
 [paths]
-tokenizer_save = "data/training/tokenizer.json"
-training_dataset = "data/dataset/"
+tokenizer = "data/training/tokenizer.json"
+encoder = "data/training/encoder.json"
+dataset = "data/dataset/"
 
 [tokenizer]
 vocab_size = 1000

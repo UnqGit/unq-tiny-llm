@@ -21,12 +21,15 @@ pub struct TokenArena {
     pub chunks: Vec<Range<usize>>,
 }
 
-pub fn initial_tokens(pretoken_sequence: &PreTokens) -> TokenArena {
-    let arena = pretoken_sequence.text
+pub fn get_token_buffer(pretoken_sequence: &PreTokens) -> Vec<TokenId> {
+    pretoken_sequence.text
         .as_bytes().iter()
         .map(|&b| TokenId::from(b))
-        .collect();
-    
+        .collect()
+}
+
+pub fn initial_tokens(pretoken_sequence: &PreTokens) -> TokenArena {
+    let arena = get_token_buffer(pretoken_sequence);
     TokenArena { arena, chunks: pretoken_sequence.chunks.clone() }
 }
 
