@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use crate::tokenizer::bpe::types::*;
 
-pub fn count_pairs(token_sequences: &[Vec<TokenId>]) -> HashMap<(TokenId, TokenId), usize> {
+pub fn count_pairs(token_sequences: &[impl AsRef<[TokenId]>]) -> HashMap<(TokenId, TokenId), usize> {
     let mut result = HashMap::new();
 
     for sequence in token_sequences {
-        for pair in sequence.windows(2) {
+        for pair in sequence.as_ref().windows(2) {
             let key = (pair[0], pair[1]);
             *result.entry(key).or_insert(0) += 1;
         }

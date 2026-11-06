@@ -2,27 +2,31 @@ use std::collections::HashMap;
 use crate::tokenizer::bpe::types::*;
 use crate::tokenizer::bpe::training::internal::*;
 use crate::tokenizer::initial::*;
+use crate::tokenizer::preprocessing::PreTokens;
 
-fn update_sequence(pair: (TokenId, TokenId), new_id: TokenId, token_sequences: &mut [Vec<TokenId>]) {
-    for token_sequence in &mut *token_sequences {
-        let len = token_sequence.len();
-        let (token_1, token_2) = pair;
-        
-        let mut read: usize = 0;
-        let mut write: usize = 0;
-        
-        while read < len {
-            if token_sequence[read] == token_1 && read + 1 < len && token_sequence[read + 1] == token_2 {
-                token_sequence[write] = new_id;
-                read += 2;
-            } else {
-                token_sequence[write] = token_sequence[read];
-                read += 1;
-            }
-            write += 1;
+fn update_sequence(pair: (TokenId, TokenId), new_id: TokenId, token_sequence: &mut [TokenId], len: &mut usize) {
+    let (token_1, token_2) = pair;
+
+    let mut read: usize = 0;
+    let mut write: usize = 0;
+    
+    while read < *len {
+        if token_sequence[read] == token_1 && read + 1 < *len && token_sequence[read + 1] == token_2 {
+            token_sequence[write] = new_id;
+            read += 2;
+        } else {
+            token_sequence[write] = token_sequence[read];
+            read += 1;
         }
-        
-        token_sequence.truncate(write);
+        write += 1;
+    }
+    
+    *len = write;
+}
+
+fn update_sequences(pair: (TokenId, TokenId), new_id: TokenId, token_sequences: &mut Vec<&mut [TokenId]>, lens: &mut Vec<usize>) {
+    for i in 0..token_sequences.len() {
+        update_sequence(pair, new_id, &mut token_sequences[i], &mut lens[i]);
     }
 }
 
@@ -42,39 +46,47 @@ fn decrement_pair(pair_count: &mut HashMap<(TokenId, TokenId), usize>, pair: (To
     Ok(())
 }
 
-fn update_pair_count(token_sequences: &[Vec<TokenId>], removal_pair: (TokenId, TokenId), new_id: TokenId, pair_count: &mut HashMap<(TokenId, TokenId), usize>) -> Result<(), String> {
+fn update_pair_count(token_sequences: &[&mut [TokenId]], lens: &[usize], removal_pair: (TokenId, TokenId), new_id: TokenId, pair_count: &mut HashMap<(TokenId, TokenId), usize>) -> Result<(), String> {
     let (rtok_1, rtok_2) = removal_pair;
 
-    for token_sequence in token_sequences {        
+    for i in 0..token_sequences.len() {
+        let token_sequence = &token_sequences[i][..lens[i]];
+
         for pair_vec in token_sequence.windows(2) {
             let (tok_1, tok_2) = (pair_vec[0], pair_vec[1]);
             if tok_1 == new_id {
                 if tok_2 == new_id {
-                    decrement_pair(pair_count, (rtok_2, rtok_1))?;
+                    decrement_pair(pair_count, (rtok_2, rtok_1))
+                        .map_err(|err| format!("{}\ntok_1 == tok_2 == new_id({})\nremoval pair:{:?}", err, new_id, removal_pair))?;
                 } else {
-                    decrement_pair(pair_count, (rtok_2, tok_2))?;
+                    decrement_pair(pair_count, (rtok_2, tok_2))
+                        .map_err(|err| format!("{}\ntok_1 == new_id && tok_2 != new_id({})\nremoval pair:{:?}", err, new_id, removal_pair))?;
                 }
                 *pair_count.entry((tok_1, tok_2)).or_insert(0) += 1;
+                decrement_pair(pair_count, removal_pair)
+                    .map_err(|err| format!("{}\ntok_1 == new_id({})\nremoval pair:{:?}", err, new_id, removal_pair))?;
             }
             else if tok_2 == new_id {
                 *pair_count.entry((tok_1, tok_2)).or_insert(0) += 1;
-                decrement_pair(pair_count, (tok_1, rtok_1))?
+                decrement_pair(pair_count, (tok_1, rtok_1))
+                    .map_err(|err| format!("{}\ntok_1 != new_id && tok_2 == new_id({})\nremoval pair:{:?}", err, new_id, removal_pair))?;
             }
         }
+        
     }
     
     pair_count.remove(&removal_pair);
     Ok(())
 }
 
-pub fn bpe_training(text: &[&str], vocab_size: usize, min_pair_freq: usize) -> Result<BpeTokenizer, String> {
-    if text.is_empty() {
-        return Err(String::from("Cannot encode text of length 0"));
-    }
-
+pub fn bpe_training(pretokens: &PreTokens, vocab_size: usize, min_pair_freq: usize) -> Result<BpeTokenizer, String> {
     let mut vocab = initial_vocab();
     let mut merges = Vec::new();
-    let mut token_seq = initial_token_sequence(text);
+
+    let mut initial_tokens = initial_tokens(pretokens);
+    let mut token_seq = build_initial_token_sequence(&mut initial_tokens);
+    let mut lens = token_seq.iter().map(|s| s.len()).collect();
+
     let mut token_pair = count_pairs(&token_seq);
 
     if vocab_size < vocab.len() {
@@ -88,12 +100,12 @@ pub fn bpe_training(text: &[&str], vocab_size: usize, min_pair_freq: usize) -> R
             vocab[pair.1].seq.clone(),
         ].concat();
         let new_vocab_word = VocabWord { seq: new_word_seq, id: vocab.len() };
-        update_sequence(pair, new_vocab_word.id, &mut token_seq);
-        update_pair_count(&token_seq, pair, new_vocab_word.id, &mut token_pair)?;
+        update_sequences(pair, new_vocab_word.id, &mut token_seq, &mut lens);
+        update_pair_count(&token_seq, &lens, pair, new_vocab_word.id, &mut token_pair)?;
                 
         merges.push(Merge { left: pair.0, right: pair.1, merged: new_vocab_word.id });
         vocab.push(new_vocab_word);
     }
     
-    Ok(BpeTokenizer { vocab, merges })
+    Ok(BpeTokenizer { vocab: vocab, merges: merges })
 }

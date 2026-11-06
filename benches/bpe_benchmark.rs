@@ -7,10 +7,11 @@ use criterion::{
 
 use unq_tiny_llm::{
     loader::{
-        load_data,
         DataLoadResult,
+        load_data,
+    }, tokenizer::{
+        bpe::training, preprocessing::preprocess_text,
     },
-    tokenizer::bpe::training
 };
 
 fn benchmark_bpe(c: &mut Criterion) {
@@ -20,18 +21,19 @@ fn benchmark_bpe(c: &mut Criterion) {
 
     let DataLoadResult { contents, .. } = text;
     let base_content = contents.join("\n\0\n");
+    let pretokens = preprocess_text(&base_content);
 
     let mut group = c.benchmark_group("BPE Training");
 
     group.bench_function("Naive", |b| {
         b.iter(|| {
-            let _ = training::naive::bpe_training(black_box(&base_content), black_box(vocab_size), black_box(min_pair_freq));
+            let _ = training::naive::bpe_training(black_box(&pretokens), black_box(vocab_size), black_box(min_pair_freq));
         });
     });
 
     group.bench_function("Optimized Pair Counting + Token Sequence Update", |b| {
         b.iter(|| {
-            let _ = training::min_alloc::bpe_training(black_box(&base_content), black_box(vocab_size), black_box(min_pair_freq));
+            let _ = training::min_alloc::bpe_training(black_box(&pretokens), black_box(vocab_size), black_box(min_pair_freq));
         });
     });
 

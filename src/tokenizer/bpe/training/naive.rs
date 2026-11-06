@@ -1,8 +1,9 @@
 use crate::tokenizer::bpe::types::*;
 use crate::tokenizer::bpe::training::internal::*;
 use crate::tokenizer::initial::*;
+use crate::tokenizer::preprocessing::PreTokens;
 
-pub fn build_new_seq(token_sequences: &[Vec<TokenId>], change_pair: (TokenId, TokenId),  new_id: TokenId) -> Vec<Vec<TokenId>> {
+fn build_new_seq(token_sequences: &[Vec<TokenId>], change_pair: (TokenId, TokenId),  new_id: TokenId) -> Vec<Vec<TokenId>> {
     let (token_1, token_2) = change_pair;
 
     let mut result_seq = Vec::with_capacity(token_sequences.len());
@@ -46,14 +47,10 @@ fn bpe_iter(token_sequences: &[Vec<TokenId>], vocab: &[VocabWord], min_pair_freq
 }
 
 #[allow(unused)]
-pub fn bpe_training(text: &[&str], vocab_size: usize, min_pair_freq: usize) -> Result<BpeTokenizer, String> {
-    if text.is_empty() {
-        return Err(String::from("Cannot encode text of length 0"));
-    }
-
+pub fn bpe_training(pretokens: &PreTokens, vocab_size: usize, min_pair_freq: usize) -> Result<BpeTokenizer, String> {
     let mut vocab = initial_vocab();
     let mut merges = Vec::new();
-    let mut token_sequence = initial_token_sequence(text);
+    let mut token_sequence = initial_token_sequence(pretokens);
 
     if (vocab_size) < vocab.len() {
         return Err(format!("Initial vocab of lone letters of size {} exceed the desired 'vocab_size' of {}", vocab.len(), vocab_size));

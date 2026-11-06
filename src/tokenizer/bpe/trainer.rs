@@ -10,15 +10,17 @@ use crate::tokenizer::bpe::training;
 use crate::tokenizer::bpe::serialization::save_tokenizer;
 
 fn train_and_save(
-    text: &[&str],
+    pretokens: &preprocessing::PreTokens,
     vocab_size: usize,
     min_pair_freq: usize,
     path: impl AsRef<Path>
 ) -> Result<(), String> {
-    let opt_tokenizer = training::min_alloc::bpe_training(text, vocab_size, min_pair_freq)?;
-    let naive_tokenizer = training::naive::bpe_training(text, vocab_size, min_pair_freq)?;
-    assert!(opt_tokenizer == naive_tokenizer);
-    save_tokenizer(&naive_tokenizer, path)
+    let tokenizer = training::min_alloc::bpe_training(pretokens, vocab_size, min_pair_freq)?;
+    debug_assert!(
+        tokenizer == training::naive::bpe_training(pretokens, vocab_size, min_pair_freq)?,
+        "Optimized tokenizer differed from the naive implementation."
+    );
+    save_tokenizer(&tokenizer, path)
 }
 
 pub fn run_tokenizer(config: &Config) {
@@ -46,12 +48,14 @@ pub fn run_tokenizer(config: &Config) {
     let boundary = content.floor_char_boundary(max_bytes);
     println!("Size of the content: {}\nPreview of the text:\n\n{}...\n", content.len(), &content[..boundary]);
 
-    let preprocessing::PreTokens { text, chunks } = preprocessing::preprocess_text(&content);
-    let chunked_slices = chunks.iter().map(|r| &text[r.clone()]).collect::<Vec<_>>();
+    let pretokens = preprocessing::preprocess_text(&content);
 
-    println!("Pretokenized string: {:#?}\n...\n", chunked_slices.iter().take(10).collect::<Vec<_>>());
+    println!(
+        "Pretokenized string: {:#?}\n...\n",
+        pretokens.chunks.iter().take(10).map(|r| &pretokens.text[r.clone()]).collect::<Vec<_>>()
+    );
 
-    let result = train_and_save(&chunked_slices, config.tokenizer.vocab_size, config.tokenizer.min_pair_freq, &config.paths.tokenizer_save);
+    let result = train_and_save(&pretokens, config.tokenizer.vocab_size, config.tokenizer.min_pair_freq, &config.paths.tokenizer_save);
     match result {
         Err(err) => eprintln!("Error occured during tokenization of data:\n{}", err),
         Ok(_) => println!("Tokenizer training successfully completed and data is succesfully saved."),
