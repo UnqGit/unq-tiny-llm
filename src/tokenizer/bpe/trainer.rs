@@ -15,8 +15,10 @@ fn train_and_save(
     min_pair_freq: usize,
     path: impl AsRef<Path>
 ) -> Result<(), String> {
-    let tokenizer = training::naive::bpe_training(text, vocab_size, min_pair_freq)?;
-    save_tokenizer(&tokenizer, path)
+    let opt_tokenizer = training::min_alloc::bpe_training(text, vocab_size, min_pair_freq)?;
+    let naive_tokenizer = training::naive::bpe_training(text, vocab_size, min_pair_freq)?;
+    assert!(opt_tokenizer == naive_tokenizer);
+    save_tokenizer(&naive_tokenizer, path)
 }
 
 pub fn run_tokenizer(config: &Config) {
@@ -49,10 +51,9 @@ pub fn run_tokenizer(config: &Config) {
 
     println!("Pretokenized string: {:#?}\n...\n", chunked_slices.iter().take(10).collect::<Vec<_>>());
 
-    let Err(err) = train_and_save(&chunked_slices, config.tokenizer.vocab_size, config.tokenizer.min_pair_freq, &config.paths.tokenizer_save)
-    else {
-        println!("Tokenizer training successfully completed and data is succesfully saved.");
-        return;
-    };
-    eprintln!("Error occured during tokenization of data:\n{}", err);
+    let result = train_and_save(&chunked_slices, config.tokenizer.vocab_size, config.tokenizer.min_pair_freq, &config.paths.tokenizer_save);
+    match result {
+        Err(err) => eprintln!("Error occured during tokenization of data:\n{}", err),
+        Ok(_) => println!("Tokenizer training successfully completed and data is succesfully saved."),
+    }
 }
