@@ -10,12 +10,12 @@ use crate::tokenizer::bpe::training;
 use crate::tokenizer::bpe::serialization::save_tokenizer;
 
 fn train_and_save(
-    text: &str,
+    text: &[&str],
     vocab_size: usize,
     min_pair_freq: usize,
     path: impl AsRef<Path>
 ) -> Result<(), String> {
-    let tokenizer = training::min_alloc::bpe_training(text, vocab_size, min_pair_freq)?;
+    let tokenizer = training::naive::bpe_training(text, vocab_size, min_pair_freq)?;
     save_tokenizer(&tokenizer, path)
 }
 
@@ -42,15 +42,14 @@ pub fn run_tokenizer(config: &Config) {
 
     let max_bytes = min(1000, content.len());
     let boundary = content.floor_char_boundary(max_bytes);
-    println!("Size of the content: {}\nPreview of the text:\n{}\n", content.len(), &content[..boundary]);
+    println!("Size of the content: {}\nPreview of the text:\n\n{}...\n", content.len(), &content[..boundary]);
 
     let preprocessing::PreTokens { text, chunks } = preprocessing::preprocess_text(&content);
-    println!(
-        "Pretokenized string: {:?}",
-        chunks.iter().take(15).map(|r| &text[r.clone()]).collect::<Vec<_>>()
-    );
+    let chunked_slices = chunks.iter().map(|r| &text[r.clone()]).collect::<Vec<_>>();
 
-    let Err(err) = train_and_save(&content, config.tokenizer.vocab_size, config.tokenizer.min_pair_freq, &config.paths.tokenizer_save)
+    println!("Pretokenized string: {:#?}\n...\n", chunked_slices.iter().take(10).collect::<Vec<_>>());
+
+    let Err(err) = train_and_save(&chunked_slices, config.tokenizer.vocab_size, config.tokenizer.min_pair_freq, &config.paths.tokenizer_save)
     else {
         println!("Tokenizer training successfully completed and data is succesfully saved.");
         return;
