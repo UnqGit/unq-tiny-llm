@@ -80,7 +80,7 @@ fn update_pair_count(token_sequences: &[&mut [TokenId]], lens: &[usize], removal
 }
 
 pub fn bpe_training(pretokens: &PreTokens, vocab_size: usize, min_pair_freq: usize) -> Result<BpeTokenizer, String> {
-    let mut vocab = initial_vocab();
+    let mut curr_vocab_size: TokenId = 256; // initial vocab consisting of all possible bytes
     let mut merges = Vec::new();
 
     let mut initial_tokens = initial_tokens(pretokens);
@@ -89,23 +89,18 @@ pub fn bpe_training(pretokens: &PreTokens, vocab_size: usize, min_pair_freq: usi
 
     let mut token_pair = count_pairs(&token_seq);
 
-    if vocab_size < vocab.len() {
-        return Err(format!("Initial vocab of lone letters of size {} exceed the desired `vocab_size` of {}", vocab.len(), vocab_size));
+    if vocab_size < curr_vocab_size {
+        return Err(format!("Initial vocab of lone letters of size {} exceed the desired `vocab_size` of {}", curr_vocab_size, vocab_size));
     }
 
-    while vocab_size > vocab.len() {
+    while vocab_size > curr_vocab_size {
         let Some(pair) = get_most_freq_pair(&token_pair, min_pair_freq) else { break };
-        let new_word_seq = [
-            vocab[pair.0].seq.clone(),
-            vocab[pair.1].seq.clone(),
-        ].concat();
-        let new_vocab_word = VocabWord { seq: new_word_seq, id: vocab.len() };
-        update_sequences(pair, new_vocab_word.id, &mut token_seq, &mut lens);
-        update_pair_count(&token_seq, &lens, pair, new_vocab_word.id, &mut token_pair)?;
+        curr_vocab_size += 1;
+        update_sequences(pair, curr_vocab_size, &mut token_seq, &mut lens);
+        update_pair_count(&token_seq, &lens, pair, curr_vocab_size, &mut token_pair)?;
                 
-        merges.push(Merge { left: pair.0, right: pair.1, merged: new_vocab_word.id });
-        vocab.push(new_vocab_word);
+        merges.push(Merge { left: pair.0, right: pair.1 });
     }
     
-    Ok(BpeTokenizer { vocab: vocab, merges: merges })
+    Ok(BpeTokenizer { merges: merges })
 }

@@ -1,12 +1,6 @@
-use crate::tokenizer::bpe::types::{VocabWord, TokenId};
+use crate::tokenizer::bpe::types::TokenId;
 use crate::tokenizer::preprocessing::{PreTokens, build_text_seq};
 use std::ops::Range;
-
-pub fn initial_vocab() -> Vec<VocabWord> {
-    (u8::MIN..=u8::MAX)
-        .map(|b| VocabWord { seq: vec![b], id: TokenId::from(b) })
-        .collect()
-}
 
 pub fn initial_token_sequence(pretokens: &PreTokens) -> Vec<Vec<TokenId>> {
     let text_tokens = build_text_seq(pretokens);

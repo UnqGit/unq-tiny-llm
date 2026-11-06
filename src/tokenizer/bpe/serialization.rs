@@ -10,7 +10,7 @@ pub fn save_tokenizer(tokenizer: &BpeTokenizer, path: impl AsRef<Path>) -> Resul
 
     let writer = BufWriter::new(file);
 
-    serde_json::to_writer_pretty(writer, tokenizer)
+    serde_json::to_writer(writer, tokenizer)
         .map_err(|e| format!("Failed to serialize tokenizer: {e}"))?;
 
     Ok(())

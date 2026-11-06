@@ -27,43 +27,36 @@ fn build_new_seq(token_sequences: &[Vec<TokenId>], change_pair: (TokenId, TokenI
     result_seq
 }
 
-fn bpe_iter(token_sequences: &[Vec<TokenId>], vocab: &[VocabWord], min_pair_freq: usize) -> Option<(Vec<Vec<TokenId>>, VocabWord, Merge)> {
+fn bpe_iter(token_sequences: &[Vec<TokenId>], min_pair_freq: usize, new_id: TokenId) -> Option<(Vec<Vec<TokenId>>, Merge)> {
     let pairs_count = count_pairs(token_sequences);
     let most_freq_pair = get_most_freq_pair(&pairs_count, min_pair_freq)?;
     let (token_1, token_2) = most_freq_pair;
 
-    let new_word_seq = [
-        vocab[token_1].seq.clone(),
-        vocab[token_2].seq.clone(),
-    ]
-    .concat();
+    let merge = Merge { left: token_1, right: token_2 };
 
-    let new_vocab_word = VocabWord { seq: new_word_seq, id: vocab.len() };
-    let merge = Merge { left: token_1, right: token_2, merged: new_vocab_word.id };
+    let result_seq = build_new_seq(token_sequences, most_freq_pair, new_id);
 
-    let result_seq = build_new_seq(token_sequences, most_freq_pair, new_vocab_word.id);
-
-    Some((result_seq, new_vocab_word, merge))
+    Some((result_seq, merge))
 }
 
 #[allow(unused)]
 pub fn bpe_training(pretokens: &PreTokens, vocab_size: usize, min_pair_freq: usize) -> Result<BpeTokenizer, String> {
-    let mut vocab = initial_vocab();
+    let mut curr_vocab_size: TokenId = 256; // initial vocab consisting of all possible bytes
     let mut merges = Vec::new();
     let mut token_sequence = initial_token_sequence(pretokens);
 
-    if (vocab_size) < vocab.len() {
-        return Err(format!("Initial vocab of lone letters of size {} exceed the desired 'vocab_size' of {}", vocab.len(), vocab_size));
+    if vocab_size < curr_vocab_size {
+        return Err(format!("Initial vocab of lone letters of size {} exceed the desired 'vocab_size' of {}", curr_vocab_size, vocab_size));
     }
 
-    while (vocab_size) > vocab.len() {
-        let Some(seq_tok) = bpe_iter(&token_sequence, &vocab, min_pair_freq) else {
+    while vocab_size > curr_vocab_size {
+        let Some(seq_tok) = bpe_iter(&token_sequence, min_pair_freq, curr_vocab_size + 1) else {
             break;
         };
         token_sequence = seq_tok.0;
-        vocab.push(seq_tok.1);
-        merges.push(seq_tok.2);
+        curr_vocab_size += 1;
+        merges.push(seq_tok.1);
     }
 
-    Ok(BpeTokenizer{vocab: vocab, merges: merges})
+    Ok(BpeTokenizer { merges: merges })
 }
