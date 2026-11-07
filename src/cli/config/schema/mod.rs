@@ -3,8 +3,8 @@ mod encoder;
 mod decoder;
 mod commands;
 
-pub use commands::COMMANDS;
+use tokenizer::TOKENIZER_ARGUMENTS;
+use encoder::ENCODER_ARGUMENTS;
+use decoder::DECODER_ARGUMENTS;
 
-pub use tokenizer::TOKENIZER_ARGUMENTS;
-pub use encoder::ENCODER_ARGUMENTS;
-pub use decoder::DECODER_ARGUMENTS;
+pub use commands::COMMANDS;
