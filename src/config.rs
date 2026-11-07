@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 pub struct Config {
     pub paths: PathConfig,
     pub tokenizer: TokenizerConfig,
+    pub decoder: DecoderConfig,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -14,12 +15,18 @@ pub struct PathConfig {
 
     pub tokenizer: PathBuf,
     pub encoder: PathBuf,
+    pub decoder: PathBuf,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize)]
 pub struct TokenizerConfig {
     pub vocab_size: usize,
     pub min_pair_freq: usize,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize)]
+pub struct DecoderConfig {
+    pub save_as_bytes: bool,
 }
 
 impl Config {

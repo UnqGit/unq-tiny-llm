@@ -1,4 +1,12 @@
-use crate::tokenizer::bpe::types::{BpeTokenizer, VocabWord};
+use serde::{Serialize, Deserialize};
+use crate::tokenizer::bpe::types::BpeTokenizer;
+
+pub type TokenSeq = Vec<u8>;
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct VocabWord {
+    pub seq: TokenSeq,
+}
 
 pub fn initial_vocab() -> Vec<VocabWord> {
     (u8::MIN..=u8::MAX)

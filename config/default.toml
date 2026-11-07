@@ -1,8 +1,12 @@
 [paths]
 tokenizer = "data/training/tokenizer.json"
 encoder = "data/training/encoder.json"
+decoder = "data/training/decoder.txt"
 dataset = "data/dataset/"
 
 [tokenizer]
 vocab_size = 1000
 min_pair_freq = 2
+
+[decoder]
+save_as_bytes = false
