@@ -1,7 +1,9 @@
+use crate::tokenizer::bpe::types::TokenId;
 use std::collections::HashMap;
-use crate::tokenizer::bpe::types::*;
 
-pub fn count_pairs(token_sequences: &[impl AsRef<[TokenId]>]) -> HashMap<(TokenId, TokenId), usize> {
+pub fn count_pairs(
+    token_sequences: &[impl AsRef<[TokenId]>],
+) -> HashMap<(TokenId, TokenId), usize> {
     let mut result = HashMap::new();
 
     for sequence in token_sequences {
@@ -14,13 +16,15 @@ pub fn count_pairs(token_sequences: &[impl AsRef<[TokenId]>]) -> HashMap<(TokenI
     result
 }
 
-pub fn get_most_freq_pair(pairs_count: &HashMap<(TokenId, TokenId), usize>, min_pair_freq: usize) -> Option<(TokenId, TokenId)> {
+pub fn get_most_freq_pair(
+    pairs_count: &HashMap<(TokenId, TokenId), usize>,
+    min_pair_freq: usize,
+) -> Option<(TokenId, TokenId)> {
     pairs_count
         .iter()
         .filter(|&(_, count)| *count >= min_pair_freq)
-        .max_by(|(pair_a, count_a), (pair_b, count_b)|
-            count_a
-                .cmp(count_b)
-                .then_with(|| pair_b.cmp(pair_a))
-        ).map(|(pair, _)| *pair)
+        .max_by(|(pair_a, count_a), (pair_b, count_b)| {
+            count_a.cmp(count_b).then_with(|| pair_b.cmp(pair_a))
+        })
+        .map(|(pair, _)| *pair)
 }

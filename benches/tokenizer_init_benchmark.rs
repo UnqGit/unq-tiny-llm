@@ -1,26 +1,15 @@
-use criterion::{
-    black_box,
-    criterion_group,
-    criterion_main,
-    Criterion,
-};
+use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use unq_tiny_llm::{
-    loader::{
-        DataLoadResult,
-        load_data
-    },
+    loader::{DataLoadResult, load_data},
     tokenizer::{
-        initial::{
-            build_initial_token_sequence,
-            initial_token_sequence,
-            initial_tokens
-        },
-        preprocessing::preprocess_text
-    }
+        initial::{build_initial_token_sequence, initial_token_sequence, initial_tokens},
+        preprocessing::preprocess_text,
+    },
 };
 
 fn tokenizer_init_benchmark(c: &mut Criterion) {
-    let text = load_data("data/dataset/books/fiction/silmarillion/chapter_1.txt").expect("Failed to load data for benchmarking.");
+    let text = load_data("data/dataset/books/fiction/silmarillion/chapter_1.txt")
+        .expect("Failed to load data for benchmarking.");
 
     let DataLoadResult { contents, .. } = text;
     let base_content = contents.join("\n\0\n");
@@ -36,7 +25,7 @@ fn tokenizer_init_benchmark(c: &mut Criterion) {
     });
 
     group.bench_function("Min alloc", |b| {
-        b.iter( || {
+        b.iter(|| {
             // generates TokenArena struct which contains Vec<TokenId> and Vec<Range<usize>> as chunk metadata.
             let mut token_arena = initial_tokens(black_box(&pretokens));
             // generates the actual Vec<&mut [TokenId]> that min_alloc implementation of tokenizer works on.

@@ -1,19 +1,8 @@
-use criterion::{
-    black_box,
-    criterion_group,
-    criterion_main,
-    Criterion,
-};
+use criterion::{Criterion, black_box, criterion_group, criterion_main};
 
 use unq_tiny_llm::{
-    loader::{
-        DataLoadResult,
-        load_data,
-    },
-    tokenizer::{
-        bpe::serialization::load_tokenizer,
-        encoding::encode,
-    },
+    loader::{DataLoadResult, load_data},
+    tokenizer::{bpe::serialization::load_tokenizer, encoding::encode},
 };
 
 fn benchmark_encoder(c: &mut Criterion) {
@@ -22,8 +11,8 @@ fn benchmark_encoder(c: &mut Criterion) {
 
     let DataLoadResult { contents, .. } = text;
     let base_content = contents.join("\n\0\n");
-    let tokenizer = load_tokenizer("data/training/tokenizer.json")
-        .expect("Unable to open tokenizer file");
+    let tokenizer =
+        load_tokenizer("data/training/tokenizer.json").expect("Unable to open tokenizer file");
 
     c.bench_function("Encoder", |b| {
         b.iter(|| {

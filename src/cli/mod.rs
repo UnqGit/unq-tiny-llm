@@ -1,6 +1,6 @@
 pub mod commands;
-pub mod handle;
 pub mod config;
-mod types;
 mod format;
+pub mod handle;
 mod hint;
+mod types;

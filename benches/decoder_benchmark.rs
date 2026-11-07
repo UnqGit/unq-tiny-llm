@@ -1,22 +1,14 @@
-use criterion::{
-    black_box,
-    criterion_group,
-    criterion_main,
-    Criterion,
-};
+use criterion::{Criterion, black_box, criterion_group, criterion_main};
 
 use unq_tiny_llm::tokenizer::{
-    bpe::serialization::load_tokenizer,
-    decoding::decode,
-    serialization::load_encoded,
+    bpe::serialization::load_tokenizer, decoding::decode, serialization::load_encoded,
 };
 
 fn benchmark_decoder(c: &mut Criterion) {
-    let tokenizer = load_tokenizer("data/training/tokenizer.json")
-        .expect("Unable to open tokenizer file");
+    let tokenizer =
+        load_tokenizer("data/training/tokenizer.json").expect("Unable to open tokenizer file");
 
-    let encoded = load_encoded("data/training/encoder.json")
-        .expect("Unable to open encoded data");
+    let encoded = load_encoded("data/training/encoder.json").expect("Unable to open encoded data");
 
     c.bench_function("Decoder", |b| {
         b.iter(|| {

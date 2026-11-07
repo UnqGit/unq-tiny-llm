@@ -1,5 +1,5 @@
-use std::fs;
 use serde::Deserialize;
+use std::fs;
 use std::path::{Path, PathBuf};
 
 #[derive(Clone, Debug, Deserialize)]
@@ -31,11 +31,11 @@ pub struct DecoderConfig {
 
 impl Config {
     pub fn load(path: impl AsRef<Path>) -> Result<Self, String> {
-        let contents = fs::read_to_string(path)
-            .map_err(|e| format!("Could not read config file: {e}"))?;
+        let contents =
+            fs::read_to_string(path).map_err(|e| format!("Could not read config file: {e}"))?;
 
-        let config: Self = toml::from_str(&contents)
-            .map_err(|e| format!("Could not read configs: {e}"))?;
+        let config: Self =
+            toml::from_str(&contents).map_err(|e| format!("Could not read configs: {e}"))?;
 
         Ok(config)
     }

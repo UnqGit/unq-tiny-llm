@@ -1,5 +1,5 @@
-use serde::{Serialize, Deserialize};
 use crate::tokenizer::bpe::types::BpeTokenizer;
+use serde::{Deserialize, Serialize};
 
 pub type TokenSeq = Vec<u8>;
 
@@ -22,9 +22,10 @@ pub fn build_vocab_repr_seq(tokenizer: &BpeTokenizer) -> Vec<VocabWord> {
         let seq = [
             res[merge.left].seq.as_slice(),
             res[merge.right].seq.as_slice(),
-        ].concat();
+        ]
+        .concat();
 
-        res.push(VocabWord { seq })
+        res.push(VocabWord { seq });
     }
     res
 }

@@ -1,5 +1,5 @@
-use crate::cli::config::internal::*;
-use crate::cli::types::{Value, ArgValue};
+use crate::cli::config::internal::{get_some_argval, unexpected_type_err};
+use crate::cli::types::{ArgValue, Value};
 use crate::config::Config;
 
 pub fn tokenizer(config: &mut Config, update_args: &Vec<ArgValue>) -> Result<(), String> {
@@ -21,7 +21,12 @@ pub fn tokenizer(config: &mut Config, update_args: &Vec<ArgValue>) -> Result<(),
                 Value::Path(path) => config.paths.tokenizer = path,
                 _ => return Err(unexpected_type_err(&arg.argument, "path")),
             },
-            _ => return Err(format!("Configuration `{}` not implemented for command `-tokenizer`", arg.argument)),
+            _ => {
+                return Err(format!(
+                    "Configuration `{}` not implemented for command `-tokenizer`",
+                    arg.argument
+                ));
+            }
         }
     }
     Ok(())
@@ -42,7 +47,12 @@ pub fn encoder(config: &mut Config, update_args: &Vec<ArgValue>) -> Result<(), S
                 Value::Path(path) => config.paths.encoder = path,
                 _ => return Err(unexpected_type_err(&arg.argument, "path")),
             },
-            _ => return Err(format!("Configuration `{}` not implemented for command `-tokenizer`", arg.argument)),
+            _ => {
+                return Err(format!(
+                    "Configuration `{}` not implemented for command `-tokenizer`",
+                    arg.argument
+                ));
+            }
         }
     }
     Ok(())
@@ -64,7 +74,12 @@ pub fn decoder(config: &mut Config, update_args: &Vec<ArgValue>) -> Result<(), S
                 _ => return Err(unexpected_type_err(&arg.argument, "path")),
             },
             "--as-bytes" => config.decoder.save_as_bytes = true,
-            _ => return Err(format!("Configuration `{}` not implemented for command `-tokenizer`", arg.argument)),
+            _ => {
+                return Err(format!(
+                    "Configuration `{}` not implemented for command `-tokenizer`",
+                    arg.argument
+                ));
+            }
         }
     }
     Ok(())

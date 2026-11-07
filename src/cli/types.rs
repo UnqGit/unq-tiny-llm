@@ -1,4 +1,4 @@
-use std::{path::PathBuf, collections::HashMap};
+use std::{collections::HashMap, path::PathBuf};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum ValueType {
@@ -55,10 +55,10 @@ pub struct ParsedCommand {
 pub type ArgumentRegistry<'a> = HashMap<&'a str, ArgumentState>;
 
 impl ValueType {
-    pub fn as_str(&self) -> &'static str {
+    pub const fn as_str(self) -> &'static str {
         match self {
-            ValueType::UInt => "unsigned integer",
-            ValueType::Path => "path",
+            Self::UInt => "unsigned integer",
+            Self::Path => "path",
         }
     }
 }

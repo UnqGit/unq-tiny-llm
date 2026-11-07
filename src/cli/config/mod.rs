@@ -1,5 +1,5 @@
-pub mod schema;
 mod internal;
+pub mod schema;
 mod update;
 
 use crate::cli::types::ParsedCommand;
@@ -10,6 +10,9 @@ pub fn update_config(config: &mut Config, update_values: &ParsedCommand) -> Resu
         "-tokenizer" => update::tokenizer(config, &update_values.updated_args),
         "-encoder" => update::encoder(config, &update_values.updated_args),
         "-decoder" => update::decoder(config, &update_values.updated_args),
-        _ => Err(format!("Command: {} not implemented.", update_values.command)),
+        _ => Err(format!(
+            "Command: {} not implemented.",
+            update_values.command
+        )),
     }
 }

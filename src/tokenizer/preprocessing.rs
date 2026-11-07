@@ -15,10 +15,7 @@ pub fn normalize_text(text: &str) -> String {
 pub fn pretokenize_text(text: String) -> PreTokens {
     let pattern = Regex::new(r"\s+|[a-zA-Z]+|\d+|[^\w\s]+").unwrap();
 
-    let chunks = pattern
-        .find_iter(&text)
-        .map(|mat| mat.range())
-        .collect();
+    let chunks = pattern.find_iter(&text).map(|mat| mat.range()).collect();
 
     PreTokens { text, chunks }
 }
@@ -29,7 +26,8 @@ pub fn preprocess_text(text: &str) -> PreTokens {
 }
 
 pub fn build_text_seq(pretokens: &PreTokens) -> Vec<&str> {
-    pretokens.chunks
+    pretokens
+        .chunks
         .iter()
         .map(|r| &pretokens.text[r.clone()])
         .collect()
