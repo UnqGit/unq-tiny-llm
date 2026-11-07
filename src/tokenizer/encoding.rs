@@ -9,15 +9,16 @@ use crate::{
                 BpeTokenizer,
                 TokenId,
             },
-        }, initial::get_token_buffer, preprocessing::preprocess_text,
+        }, preprocessing::normalize_text,
     }
 };
 
 pub fn encode(text: &str, tokenizer: &BpeTokenizer) -> Vec<TokenId> {
-    let pretoken_sequence = preprocess_text(text);
-    let merge_seq = &tokenizer.merges;
-    let mut tokens = get_token_buffer(&pretoken_sequence);
+    let normalized_text = normalize_text(text);
+    let mut tokens = normalized_text.as_bytes().iter()
+        .map(|&c| c as TokenId).collect::<Vec<_>>();
     let mut len = tokens.len();
+    let merge_seq = &tokenizer.merges;
     
     for (i, merge) in merge_seq.iter().enumerate() {
         let pair = (merge.left, merge.right);

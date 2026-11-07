@@ -25,3 +25,7 @@ harness = false
 [[bench]]
 name = "encoder_benchmark"
 harness = false
+
+[[bench]]
+name = "decoder_benchmark"
+harness = false
