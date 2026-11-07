@@ -82,7 +82,7 @@ pub fn run_decoder(config: &Config) {
                 let max_bytes = cmp::min(1000, v.len());
                 let boundary = v.floor_char_boundary(max_bytes);
                 println!("Decoding of tokens successfully completed and data is succesfully saved.");
-                println!("Text Preview:\n{:#?}...", &v[..boundary]);
+                println!("Text Preview:\n{}...", &v[..boundary]);
             },
         }
     }

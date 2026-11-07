@@ -95,9 +95,9 @@ pub fn bpe_training(pretokens: &PreTokens, vocab_size: usize, min_pair_freq: usi
 
     while vocab_size > curr_vocab_size {
         let Some(pair) = get_most_freq_pair(&token_pair, min_pair_freq) else { break };
-        curr_vocab_size += 1;
         update_sequences(pair, curr_vocab_size, &mut token_seq, &mut lens);
         update_pair_count(&token_seq, &lens, pair, curr_vocab_size, &mut token_pair)?;
+        curr_vocab_size += 1;
                 
         merges.push(Merge { left: pair.0, right: pair.1 });
     }

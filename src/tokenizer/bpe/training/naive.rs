@@ -49,7 +49,7 @@ pub fn bpe_training(pretokens: &PreTokens, vocab_size: usize, min_pair_freq: usi
     }
 
     while vocab_size > curr_vocab_size {
-        let Some(seq_tok) = bpe_iter(&token_sequence, min_pair_freq, curr_vocab_size + 1) else {
+        let Some(seq_tok) = bpe_iter(&token_sequence, min_pair_freq, curr_vocab_size) else {
             break;
         };
         token_sequence = seq_tok.0;
