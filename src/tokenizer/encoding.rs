@@ -1,19 +1,15 @@
-use std::{cmp, fs::File, io::BufWriter, path::Path};
+use std::{cmp, path::Path};
 
 use crate::{
-    config::Config,
-    loader::load_data,
-    tokenizer::{
-        bpe::{
+    config::Config, loader::load_data, tokenizer::{
+        serialization::save_encoded, bpe::{
             serialization::load_tokenizer,
             training::min_alloc::update_sequence,
             types::{
                 BpeTokenizer,
                 TokenId,
             },
-        },
-        initial::get_token_buffer,
-        preprocessing::preprocess_text,
+        }, initial::get_token_buffer, preprocessing::preprocess_text,
     }
 };
 
@@ -36,15 +32,7 @@ pub fn encode(text: &str, tokenizer: &BpeTokenizer) -> Vec<TokenId> {
 
 pub fn encode_and_save(text: &str, tokenizer: &BpeTokenizer, path: impl AsRef<Path>) -> Result<Vec<TokenId>, String> {
     let res = encode(text, tokenizer);
-
-    let file = File::create(path)
-        .map_err(|e| format!("Failed to create encoder file: {e}"))?;
-
-    let writer = BufWriter::new(file);
-
-    serde_json::to_writer(writer, &res)
-        .map_err(|e| format!("Failed to serialize encoded tokens: {e}"))?;
-
+    save_encoded(path, &res)?;
     Ok(res)
 }
 
