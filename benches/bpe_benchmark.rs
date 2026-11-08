@@ -50,7 +50,7 @@ fn benchmark_bpe(c: &mut Criterion) {
         group
             .sample_size(20)
             .sampling_mode(SamplingMode::Auto)
-            .measurement_time(Duration::from_secs(10))
+            .measurement_time(Duration::from_secs(5))
             .warm_up_time(Duration::from_secs(3));
 
         for &vocab_size in VOCAB_SIZES {    
@@ -74,9 +74,19 @@ fn benchmark_bpe(c: &mut Criterion) {
             //     });
             // });
 
-            group.bench_function(format!("OptimizedStream/{vocab_size}"), |b| {
+            // group.bench_function(format!("OptimizedStream/{vocab_size}"), |b| {
+            //     b.iter(|| {
+            //         let _ = training::min_alloc_stream::bpe_training(
+            //             black_box(&pretokens),
+            //             black_box(vocab_size),
+            //             black_box(min_pair_freq),
+            //         );
+            //     });
+            // });
+
+            group.bench_function(format!("OptimizedStore/{vocab_size}"), |b| {
                 b.iter(|| {
-                    let _ = training::min_alloc_stream::bpe_training(
+                    let _ = training::min_alloc_store::bpe_training(
                         black_box(&pretokens),
                         black_box(vocab_size),
                         black_box(min_pair_freq),
