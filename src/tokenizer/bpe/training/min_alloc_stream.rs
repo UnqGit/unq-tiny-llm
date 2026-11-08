@@ -76,9 +76,6 @@ fn update_pair_count(token_sequence: &[TokenId], removal_pair: (TokenId, TokenId
                 })?;
             }
             *pair_count.entry((tok_1, tok_2)).or_insert(0) += 1;
-            decrement_pair(pair_count, removal_pair).map_err(|err| {
-                format!("{err}\ntok_1 == new_id({new_id})\nremoval pair:{removal_pair:?}")
-            })?;
         } else if tok_2 == new_id {
             *pair_count.entry((tok_1, tok_2)).or_insert(0) += 1;
             decrement_pair(pair_count, (tok_1, rtok_1)).map_err(|err| {
