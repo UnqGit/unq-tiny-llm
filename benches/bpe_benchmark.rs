@@ -54,19 +54,29 @@ fn benchmark_bpe(c: &mut Criterion) {
             .warm_up_time(Duration::from_secs(3));
 
         for &vocab_size in VOCAB_SIZES {    
-            group.bench_function(format!("Naive/{vocab_size}"), |b| {
+            // group.bench_function(format!("Naive/{vocab_size}"), |b| {
+            //     b.iter(|| {
+            //         let _ = training::naive::bpe_training(
+            //             black_box(&pretokens),
+            //             black_box(vocab_size),
+            //             black_box(min_pair_freq),
+            //         );
+            //     });
+            // });
+
+            // group.bench_function(format!("Optimized/{vocab_size}"), |b| {
+            //     b.iter(|| {
+            //         let _ = training::min_alloc::bpe_training(
+            //             black_box(&pretokens),
+            //             black_box(vocab_size),
+            //             black_box(min_pair_freq),
+            //         );
+            //     });
+            // });
+
+            group.bench_function(format!("OptimizedStream/{vocab_size}"), |b| {
                 b.iter(|| {
-                    let _ = training::naive::bpe_training(
-                        black_box(&pretokens),
-                        black_box(vocab_size),
-                        black_box(min_pair_freq),
-                    );
-                });
-            });
-    
-            group.bench_function(format!("Optimized/{vocab_size}"), |b| {
-                b.iter(|| {
-                    let _ = training::min_alloc::bpe_training(
+                    let _ = training::min_alloc_stream::bpe_training(
                         black_box(&pretokens),
                         black_box(vocab_size),
                         black_box(min_pair_freq),
