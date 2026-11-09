@@ -33,7 +33,7 @@ def extract_data():
                 continue
 
             match = re.fullmatch(
-                r"(optimizedstream|optimizedstore)_(\d+)",
+                r"(naive|optimizedpar)_(\d+)",
                 benchmark_dir.name
             )
 
@@ -108,7 +108,7 @@ def speedup(estimate_df):
     ).reset_index()
 
     speedup_df["speedup"] = (
-        speedup_df["optimizedstream"] / speedup_df["optimizedstore"]
+        speedup_df["naive"] / speedup_df["optimizedpar"]
     )
 
     sns.relplot(
@@ -181,8 +181,8 @@ def main():
     print(estimate_df.head())
     print(estimate_df.info())
 
-    plot_3d_surface(estimate_df, "optimizedstream")
-    plot_3d_surface(estimate_df, "optimizedstore")
+    plot_3d_surface(estimate_df, "naive")
+    plot_3d_surface(estimate_df, "optimizedpar")
     mean_exec_vs_vocab(estimate_df)
     mean_exec_vs_data(estimate_df)
     speedup(estimate_df)

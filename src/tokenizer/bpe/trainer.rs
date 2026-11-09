@@ -16,7 +16,7 @@ fn train_and_save(
     min_pair_freq: usize,
     path: impl AsRef<Path>,
 ) -> Result<BpeTokenizer, String> {
-    let tokenizer = training::min_alloc_store::bpe_training(pretokens, vocab_size, min_pair_freq)?;
+    let tokenizer = training::min_alloc_par::bpe_training(pretokens, vocab_size, min_pair_freq)?;
 
     debug_assert!({
         let res = training::naive::bpe_training(pretokens, vocab_size, min_pair_freq)?;
