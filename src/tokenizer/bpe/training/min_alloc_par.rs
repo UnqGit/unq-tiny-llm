@@ -1,7 +1,5 @@
 use std::{
-    cmp,
-    collections::HashMap,
-    iter::zip,
+    cmp, collections::HashMap, iter::zip,
 };
 use rayon::prelude::*;
 
@@ -205,7 +203,7 @@ pub fn bpe_training(pretokens: &PreTokens, vocab_size: usize, min_pair_freq: usi
 
     let mut pair_count = internal::count_pairs(&arena);
     let mut arenas = create_thread_arenas(&mut arena, target_count);
-
+    
     while curr_vocab_size < vocab_size {
         let Some(best_pair) = internal::get_most_freq_pair(&pair_count, min_pair_freq) else { break; };
         update(&mut arenas, &mut pair_count, best_pair, curr_vocab_size)?;
