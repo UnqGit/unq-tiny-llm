@@ -5,6 +5,7 @@ mod tokenizer;
 
 use cli::{commands::run_command, config::update_config, handle::parse_arguments};
 use config::Config;
+use unq_tiny_llm::embedding;
 use std::{env, path::Path, process};
 
 fn main() {
