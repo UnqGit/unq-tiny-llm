@@ -1,7 +1,7 @@
 use crate::tokenizer::bpe::training::internal::{TokenFreqMap, TokenPair, count_pairs, get_most_freq_pair};
 use crate::tokenizer::bpe::types::{BpeTokenizer, Merge, TokenId};
 use crate::tokenizer::bpe::training::optimized::internal::{update_sequence, decrement_pair};
-use crate::tokenizer::initial::{build_initial_token_sequence, initial_tokens};
+use crate::tokenizer::bpe::training::initial::{build_initial_token_sequence, initial_tokens};
 use crate::tokenizer::preprocessing::PreTokens;
 
 fn update_sequences(

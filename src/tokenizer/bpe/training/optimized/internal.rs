@@ -140,17 +140,17 @@ pub fn update_thread(
     arena: &mut [&mut [TokenId]],
     lens: &mut [usize],
     change_buf: &mut [usize],
-    pair_detla: &mut TokenDeltaMap,
+    pair_delta: &mut TokenDeltaMap,
     removal_pair: TokenPair,
     new_token_id: TokenId
 ) {
-    pair_detla.clear();
+    pair_delta.clear();
     for (token_sequence, len) in zip(arena, lens) {
         let buf_len = update_sequence_discrete(removal_pair, new_token_id, token_sequence, len, change_buf);
         if buf_len != 0 {
             let tok_seq = &token_sequence[..*len];
             let pos_buf = &change_buf[..buf_len];
-            update_delta_aggregate(tok_seq, removal_pair, pair_detla, pos_buf);
+            update_delta_aggregate(tok_seq, removal_pair, pair_delta, pos_buf);
         }
     }
 }

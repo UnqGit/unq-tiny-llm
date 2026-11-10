@@ -7,10 +7,12 @@ use crate::tokenizer::{
     bpe::{
         training::{
             internal::{self, TokenFreqMap, TokenPair}, optimized::internal::{ThreadTokenArena, TokenDeltaMap, calculate_chunk_count, create_thread_arenas, update_thread},
+            initial::{self, TokenArena},
         }, types::{
             BpeTokenizer, Merge, TokenId,
         }
-    }, initial::{self, TokenArena}, preprocessing::PreTokens
+    },
+    preprocessing::PreTokens
 };
 
 fn update_freq_map(freq_map: &mut TokenFreqMap, delta_map: &TokenDeltaMap, token_queue: &mut BinaryHeap<(usize, Reverse<TokenPair>)>) -> Result<(), String> {
@@ -81,6 +83,7 @@ fn get_most_freq_pair(freq_map: &TokenFreqMap, token_queue: &mut BinaryHeap<(usi
     None
 }
 
+#[allow(unused)]
 pub fn bpe_training(pretokens: &PreTokens, vocab_size: usize, min_pair_freq: usize) -> Result<BpeTokenizer, String> {
     let total_token_count = pretokens.text.len();
 

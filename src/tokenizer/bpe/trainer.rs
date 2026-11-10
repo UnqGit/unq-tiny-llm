@@ -18,18 +18,18 @@ fn train_and_save(
 ) -> Result<BpeTokenizer, String> {
     let tokenizer = training::optimized::bpe_training(pretokens, vocab_size, min_pair_freq)?;
 
-    // debug_assert!({
-    //     let res = training::naive::bpe_training(pretokens, vocab_size, min_pair_freq)?;
+    debug_assert!({
+        let res = training::naive::bpe_training(pretokens, vocab_size, min_pair_freq)?;
 
-    //     assert!(
-    //         tokenizer == res,
-    //         "Optimized tokenizer differed from the naive implementation:\n\
-    //         Optimized:\n{tokenizer:#?}\n\
-    //         Naive:\n{res:#?}"
-    //     );
+        assert!(
+            tokenizer == res,
+            "Optimized tokenizer differed from the naive implementation:\n\
+            Optimized:\n{tokenizer:#?}\n\
+            Naive:\n{res:#?}"
+        );
 
-    //     true
-    // });
+        true
+    });
     save_tokenizer(&tokenizer, path)?;
     Ok(tokenizer)
 }
@@ -85,6 +85,7 @@ pub fn run_tokenizer(config: &Config) {
         Err(err) => eprintln!("Error occured during tokenization of data:\n{err}"),
         Ok(tok) => {
             println!("Tokenizer training successfully completed and data is succesfully saved.");
+            println!("Total number of learnt merges: {}", tok.merges.len());
             println!(
                 "Few merged tokens:\n{:#?}...",
                 tok.merges.iter().take(5).collect::<Vec<_>>()

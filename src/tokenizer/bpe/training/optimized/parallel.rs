@@ -4,10 +4,12 @@ use crate::tokenizer::{
     bpe::{
         training::{
             internal::{self, TokenFreqMap, TokenPair}, optimized::internal::{ThreadTokenArena, TokenDeltaMap, calculate_chunk_count, create_thread_arenas, update_thread},
+            initial::{self, TokenArena},
         }, types::{
             BpeTokenizer, Merge, TokenId,
-        }
-    }, initial::{self, TokenArena}, preprocessing::PreTokens
+        },
+    },
+    preprocessing::PreTokens
 };
 
 fn update_freq_map(freq_map: &mut TokenFreqMap, delta_map: &TokenDeltaMap) -> Result<(), String> {

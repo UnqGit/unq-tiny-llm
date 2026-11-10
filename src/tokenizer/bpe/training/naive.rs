@@ -1,6 +1,6 @@
 use crate::tokenizer::bpe::training::internal::{TokenPair, count_pairs, get_most_freq_pair};
 use crate::tokenizer::bpe::types::{BpeTokenizer, Merge, TokenId};
-use crate::tokenizer::initial::initial_token_sequence;
+use crate::tokenizer::bpe::training::initial::initial_token_sequence;
 use crate::tokenizer::preprocessing::PreTokens;
 
 fn build_new_seq(
@@ -50,6 +50,7 @@ fn bpe_iter(
     Some((result_seq, merge))
 }
 
+#[allow(unused)]
 pub fn bpe_training(
     pretokens: &PreTokens,
     vocab_size: usize,

@@ -104,7 +104,6 @@ fn benchmark_bpe(c: &mut Criterion) {
                 });
             });
         }
-        
         group.finish();
     }
 
