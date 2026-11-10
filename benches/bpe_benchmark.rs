@@ -94,9 +94,19 @@ fn benchmark_bpe(c: &mut Criterion) {
             //     });
             // });
 
-            group.bench_function(format!("OptimizedPar/{vocab_size}"), |b| {
+            // group.bench_function(format!("OptimizedPar/{vocab_size}"), |b| {
+            //     b.iter(|| {
+            //         let _ = training::min_alloc_par::bpe_training(
+            //             black_box(&pretokens),
+            //             black_box(vocab_size),
+            //             black_box(min_pair_freq),
+            //         );
+            //     });
+            // });
+
+            group.bench_function(format!("OptimizedPriorityQueue/{vocab_size}"), |b| {
                 b.iter(|| {
-                    let _ = training::min_alloc_par::bpe_training(
+                    let _ = training::min_alloc_pq::bpe_training(
                         black_box(&pretokens),
                         black_box(vocab_size),
                         black_box(min_pair_freq),

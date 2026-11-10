@@ -41,19 +41,12 @@ pub fn build_initial_token_sequence(initial_tokens: &mut TokenArena) -> Vec<&mut
     } = initial_tokens;
     let mut result = Vec::with_capacity(ranges.len());
     let mut remaining = data.as_mut_slice();
-    let mut offset = 0;
 
     for range in ranges {
-        let start = range.start - offset;
         let len = range.end - range.start;
-
-        let (_, rest) = remaining.split_at_mut(start);
-        let (slice, rest) = rest.split_at_mut(len);
-
+        let (slice, rest) = remaining.split_at_mut(len);
         result.push(slice);
-
         remaining = rest;
-        offset = range.end;
     }
 
     result
