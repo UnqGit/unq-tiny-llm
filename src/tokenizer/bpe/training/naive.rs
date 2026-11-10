@@ -1,11 +1,11 @@
-use crate::tokenizer::bpe::training::internal::{count_pairs, get_most_freq_pair};
+use crate::tokenizer::bpe::training::internal::{TokenPair, count_pairs, get_most_freq_pair};
 use crate::tokenizer::bpe::types::{BpeTokenizer, Merge, TokenId};
 use crate::tokenizer::initial::initial_token_sequence;
 use crate::tokenizer::preprocessing::PreTokens;
 
 fn build_new_seq(
     token_sequences: &[Vec<TokenId>],
-    change_pair: (TokenId, TokenId),
+    change_pair: TokenPair,
     new_id: TokenId,
 ) -> Vec<Vec<TokenId>> {
     let (token_1, token_2) = change_pair;

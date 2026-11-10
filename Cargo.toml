@@ -29,3 +29,7 @@ harness = false
 [[bench]]
 name = "decoder_benchmark"
 harness = false
+
+[[bench]]
+name = "bpe_fast_bench"
+harness = false

@@ -1,9 +1,12 @@
 use crate::tokenizer::bpe::types::TokenId;
 use std::collections::HashMap;
 
+pub type TokenPair = (TokenId, TokenId);
+pub type TokenFreqMap = HashMap<TokenPair, usize>;
+
 pub fn count_pairs(
     token_sequences: &[impl AsRef<[TokenId]>],
-) -> HashMap<(TokenId, TokenId), usize> {
+) -> TokenFreqMap {
     let mut result = HashMap::new();
 
     for sequence in token_sequences {
@@ -17,9 +20,9 @@ pub fn count_pairs(
 }
 
 pub fn get_most_freq_pair(
-    pairs_count: &HashMap<(TokenId, TokenId), usize>,
+    pairs_count: &TokenFreqMap,
     min_pair_freq: usize,
-) -> Option<(TokenId, TokenId)> {
+) -> Option<TokenPair> {
     pairs_count.iter()
         .filter(|&(_, count)| *count >= min_pair_freq)
         .max_by(|(pair_a, count_a), (pair_b, count_b)| {

@@ -1,74 +1,14 @@
-use crate::tokenizer::bpe::training::internal::{count_pairs, get_most_freq_pair};
+use crate::tokenizer::bpe::training::internal::{TokenFreqMap, TokenPair, count_pairs, get_most_freq_pair};
+use crate::tokenizer::bpe::training::optimized::internal::{decrement_pair, update_sequence_discrete};
 use crate::tokenizer::bpe::types::{BpeTokenizer, Merge, TokenId};
 use crate::tokenizer::initial::{build_initial_token_sequence, initial_tokens};
 use crate::tokenizer::preprocessing::PreTokens;
-use std::collections::HashMap;
 use std::iter::zip;
-
-fn update_sequence(
-    pair: (TokenId, TokenId),
-    new_id: TokenId,
-    token_sequence: &mut [TokenId],
-    len: &mut usize,
-    pos_buffer: &mut [usize]
-) -> usize {
-    let size = *len;
-    if size == 1 {
-        return 0;
-    }
-    
-    let mut read: usize = 0;
-    let mut write: usize = 0;
-    
-    let (token_1, token_2) = pair;
-
-
-    while read < size {
-        if token_sequence[read] == token_1 && read + 1 < size && token_sequence[read + 1] == token_2
-        {
-            pos_buffer[read-write] = write;
-            token_sequence[write] = new_id;
-            read += 2;
-        } else {
-            token_sequence[write] = token_sequence[read];
-            read += 1;
-        }
-        write += 1;
-    }
-
-    *len = write;
-    read-write
-}
-
-fn decrement_pair(
-    pair_count: &mut HashMap<(TokenId, TokenId), usize>,
-    pair: (TokenId, TokenId),
-) -> Result<(), String> {
-    match pair_count.get_mut(&pair) {
-        Some(count) => {
-            if *count == 0usize {
-                return Err(format!(
-                    "Program error: pair {pair:?} in the map has frequency=0 which cannot be decremented."
-                ));
-            }
-            *count -= 1;
-            if *count == 0usize {
-                pair_count.remove(&pair);
-            }
-        }
-        None => {
-            return Err(format!(
-                "Program error: the map does not contain {pair:?}, count of which is to be decremented"
-            ));
-        }
-    }
-    Ok(())
-}
 
 fn update_pair_count(
     token_sequence: &[TokenId],
-    removal_pair: (TokenId, TokenId),
-    pair_count: &mut HashMap<(TokenId, TokenId), usize>,
+    removal_pair: TokenPair,
+    pair_count: &mut TokenFreqMap,
     pos_buffer: &[usize]
 ) -> Result<(), String> {
     let len = token_sequence.len();
@@ -110,13 +50,13 @@ fn update_pair_count(
 fn update(
     token_sequences: &mut [&mut [TokenId]],
     lens: &mut [usize],
-    removal_pair: (TokenId, TokenId),
+    removal_pair: TokenPair,
     new_id: TokenId,
-    pair_count: &mut HashMap<(TokenId, TokenId), usize>,
+    pair_count: &mut TokenFreqMap,
     pos_buffer: &mut [usize],
 ) -> Result<(), String> {
     for (token_sequence, len) in zip(token_sequences, lens) {
-        let buf_len = update_sequence(removal_pair, new_id, token_sequence, len, pos_buffer);
+        let buf_len = update_sequence_discrete(removal_pair, new_id, token_sequence, len, pos_buffer);
         if buf_len != 0 {
             let token_seq = &token_sequence[..*len];
             update_pair_count(token_seq, removal_pair, pair_count, &pos_buffer[..buf_len])?;
@@ -126,6 +66,7 @@ fn update(
     Ok(())
 }
 
+#[allow(unused)]
 pub fn bpe_training(
     pretokens: &PreTokens,
     vocab_size: usize,

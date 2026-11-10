@@ -5,12 +5,13 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
+from sys import argv;
 
 CURR_DIR = Path(__file__).resolve().parent
 ROOT = CURR_DIR.parent / "target" / "criterion"
 NANO_TO_MILLI = 1_000_000
 
-def extract_data():
+def extract_data(impl1, impl2):
     estimates_data = []
 
     # Traverse algorithm directories
@@ -33,7 +34,7 @@ def extract_data():
                 continue
 
             match = re.fullmatch(
-                r"(naive|optimizedpriorityqueue)_(\d+)",
+                f"({impl1}|{impl2})_(\\d+)",
                 benchmark_dir.name
             )
 
@@ -100,7 +101,7 @@ def mean_exec_vs_data(estimate_df):
         aspect=1.2
     )
 
-def speedup(estimate_df):
+def speedup(estimate_df, impl1, impl2):
     speedup_df = estimate_df.pivot(
         index=["data_size", "vocab_size"],
         columns="implementation",
@@ -108,7 +109,7 @@ def speedup(estimate_df):
     ).reset_index()
 
     speedup_df["speedup"] = (
-        speedup_df["naive"] / speedup_df["optimizedpriorityqueue"]
+        speedup_df[impl1] / speedup_df[impl2]
     )
 
     sns.relplot(
@@ -172,8 +173,8 @@ def plot_3d_surface(estimate_df, implementation):
 
     fig.colorbar(surface, ax=ax, label="Execution Time")
 
-def main():
-    estimate_data = extract_data()
+def main(argv):
+    estimate_data = extract_data(argv[1], argv[2])
     print(f"Extracted {len(estimate_data)} benchmarks")
 
     estimate_df = pd.DataFrame(estimate_data)
@@ -181,13 +182,13 @@ def main():
     print(estimate_df.head())
     print(estimate_df.info())
 
-    plot_3d_surface(estimate_df, "naive")
-    plot_3d_surface(estimate_df, "optimizedpriorityqueue")
+    plot_3d_surface(estimate_df, argv[1])
+    plot_3d_surface(estimate_df, argv[2])
     mean_exec_vs_vocab(estimate_df)
     mean_exec_vs_data(estimate_df)
-    speedup(estimate_df)
+    speedup(estimate_df, argv[1], argv[2])
     
     plt.show()
 
 if __name__ == '__main__':
-    main()
+    main(argv)

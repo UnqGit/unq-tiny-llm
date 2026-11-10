@@ -6,7 +6,7 @@ use crate::{
     tokenizer::{
         bpe::{
             serialization::load_tokenizer,
-            training::min_alloc::update_sequence,
+            training::optimized::update_sequence,
             types::{BpeTokenizer, TokenId},
         },
         preprocessing::normalize_text,

@@ -12,7 +12,7 @@ static DATA_SIZES: &[usize] = &[
     100_000,
     250_000,
     500_000,
-    // 1_000_000,
+    1_000_000,
 ];
 
 static VOCAB_SIZES: &[usize] = &[
@@ -53,60 +53,50 @@ fn benchmark_bpe(c: &mut Criterion) {
             .measurement_time(Duration::from_secs(5))
             .warm_up_time(Duration::from_secs(3));
 
-        for &vocab_size in VOCAB_SIZES {    
-            // group.bench_function(format!("Naive/{vocab_size}"), |b| {
-            //     b.iter(|| {
-            //         let _ = training::naive::bpe_training(
-            //             black_box(&pretokens),
-            //             black_box(vocab_size),
-            //             black_box(min_pair_freq),
-            //         );
-            //     });
-            // });
+        for &vocab_size in VOCAB_SIZES {
+            group.bench_function(format!("Naive/{vocab_size}"), |b| {
+                b.iter(|| {
+                    let _ = training::naive::bpe_training(
+                        black_box(&pretokens),
+                        black_box(vocab_size),
+                        black_box(min_pair_freq),
+                    );
+                });
+            });
 
-            // group.bench_function(format!("Optimized/{vocab_size}"), |b| {
-            //     b.iter(|| {
-            //         let _ = training::min_alloc::bpe_training(
-            //             black_box(&pretokens),
-            //             black_box(vocab_size),
-            //             black_box(min_pair_freq),
-            //         );
-            //     });
-            // });
+            group.bench_function(format!("Optimized/{vocab_size}"), |b| {
+                b.iter(|| {
+                    let _ = training::optimized::min_alloc::bpe_training(
+                        black_box(&pretokens),
+                        black_box(vocab_size),
+                        black_box(min_pair_freq),
+                    );
+                });
+            });
 
-            // group.bench_function(format!("OptimizedStream/{vocab_size}"), |b| {
-            //     b.iter(|| {
-            //         let _ = training::min_alloc_stream::bpe_training(
-            //             black_box(&pretokens),
-            //             black_box(vocab_size),
-            //             black_box(min_pair_freq),
-            //         );
-            //     });
-            // });
+            group.bench_function(format!("OptimizedStore/{vocab_size}"), |b| {
+                b.iter(|| {
+                    let _ = training::optimized::change_store::bpe_training(
+                        black_box(&pretokens),
+                        black_box(vocab_size),
+                        black_box(min_pair_freq),
+                    );
+                });
+            });
 
-            // group.bench_function(format!("OptimizedStore/{vocab_size}"), |b| {
-            //     b.iter(|| {
-            //         let _ = training::min_alloc_store::bpe_training(
-            //             black_box(&pretokens),
-            //             black_box(vocab_size),
-            //             black_box(min_pair_freq),
-            //         );
-            //     });
-            // });
-
-            // group.bench_function(format!("OptimizedPar/{vocab_size}"), |b| {
-            //     b.iter(|| {
-            //         let _ = training::min_alloc_par::bpe_training(
-            //             black_box(&pretokens),
-            //             black_box(vocab_size),
-            //             black_box(min_pair_freq),
-            //         );
-            //     });
-            // });
+            group.bench_function(format!("OptimizedPar/{vocab_size}"), |b| {
+                b.iter(|| {
+                    let _ = training::optimized::parallel::bpe_training(
+                        black_box(&pretokens),
+                        black_box(vocab_size),
+                        black_box(min_pair_freq),
+                    );
+                });
+            });
 
             group.bench_function(format!("OptimizedPriorityQueue/{vocab_size}"), |b| {
                 b.iter(|| {
-                    let _ = training::min_alloc_pq::bpe_training(
+                    let _ = training::optimized::max_heap::bpe_training(
                         black_box(&pretokens),
                         black_box(vocab_size),
                         black_box(min_pair_freq),
