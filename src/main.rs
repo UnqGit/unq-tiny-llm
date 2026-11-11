@@ -2,10 +2,10 @@ mod cli;
 mod config;
 mod loader;
 mod tokenizer;
+mod logger;
 
 use cli::{commands::run_command, config::update_config, handle::parse_arguments};
 use config::Config;
-use unq_tiny_llm::embedding;
 use std::{env, path::Path, process};
 
 fn main() {
@@ -13,33 +13,32 @@ fn main() {
     let mut config = match Config::load(config_path) {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("Could not load configs: \n\n{e}");
+            log_error!("Could not load configs: \n\n{e}");
             process::exit(1);
         }
     };
-    println!("Default configurations: \n\n{config:#?}\n");
+    log_info!("Default configurations: \n\n{config:#?}\n");
 
     let args: Vec<String> = env::args().skip(1).collect();
-    println!("Passed arguments: {args:#?}\n");
+    log_info!("Passed arguments: {args:#?}\n");
 
     let result = parse_arguments(&args);
     match result {
         Err(err) => {
-            eprintln!("Could not run: \n\n{err}");
+            log_error!("Error occured during parsing: \n\n{err}");
             process::exit(1);
         }
         Ok(res) => {
-            println!("Parsed command: \n\n{res:#?}\n");
+            log_info!("Parsed command: \n\n{res:#?}\n");
             if let Err(err) = update_config(&mut config, &res) {
-                eprintln!("Could not update the configs: \n\n{err}");
+                log_error!("Could not update the configs: \n\n{err}");
                 process::exit(1);
             }
         }
     }
 
-    println!("Final configurations: \n\n{config:#?}\n");
-    println!(
-        "==================================Running commands==================================\n\n"
-    );
+    log_info!("Final configurations: \n\n{config:#?}\n");
+    print_colored!(logger::GREEN, "==================================Running commands==================================\n\n");
+
     run_command(&config, &args[0]);
 }
