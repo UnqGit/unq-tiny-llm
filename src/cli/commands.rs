@@ -4,13 +4,15 @@ mod internal {
     pub use crate::tokenizer::encoding::run_encoder;
 }
 
-use crate::{config::Config, log_warning};
+use crate::{config::Config, log_info, log_warning, logger, print_colored};
 
 pub fn run_command(config: &Config, command: &str) {
+    log_info!("Started runnning command {command}");
     match command {
         "-tokenizer" => internal::run_tokenizer(config),
         "-encoder"   => internal::run_encoder(config),
         "-decoder"   => internal::run_decoder(config),
         _            => log_warning!("Command: `{command}` is not implemented"),
     }
+    print_colored!(logger::CYAN, "[FINISHED]");
 }

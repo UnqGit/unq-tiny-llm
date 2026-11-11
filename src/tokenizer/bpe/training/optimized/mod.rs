@@ -6,4 +6,5 @@ pub mod change_store;
 pub mod parallel;
 pub mod max_heap;
 
+#[allow(unused)]
 pub use max_heap::bpe_training;

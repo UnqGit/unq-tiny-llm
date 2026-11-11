@@ -1,3 +1,5 @@
+use crate::{log_info, log_success};
+use crate::logger::Fax;
 use crate::tokenizer::bpe::training::internal::{TokenFreqMap, TokenPair, count_pairs, get_most_freq_pair};
 use crate::tokenizer::bpe::training::optimized::internal::{decrement_pair, update_sequence_discrete};
 use crate::tokenizer::bpe::types::{BpeTokenizer, Merge, TokenId};
@@ -72,6 +74,9 @@ pub fn bpe_training(
     vocab_size: usize,
     min_pair_freq: usize,
 ) -> Result<BpeTokenizer, String> {
+    log_info!("BPE Training initialized.");
+    log_info!("Method of training: Discrete Frequence updation\n");
+
     let mut curr_vocab_size: TokenId = 256; // initial vocab consisting of all possible bytes
     if vocab_size < curr_vocab_size {
         return Err(format!(
@@ -98,18 +103,31 @@ pub fn bpe_training(
     pos_vec.resize(max_len / 2, 0);
     let mut token_pair = count_pairs(&token_seq);
 
+    let mut bar = Fax::new();
+    let loading_bar_len = 40;
+    let one_tick_len = vocab_size.div_ceil(loading_bar_len);
+    let mut i = 0;
+    bar.loading_bar_set(loading_bar_len);
+
     while vocab_size > curr_vocab_size {
         let Some(pair) = get_most_freq_pair(&token_pair, min_pair_freq) else {
             break;
         };
         update(&mut token_seq, &mut lens, pair, curr_vocab_size, &mut token_pair, &mut pos_vec)?;
         curr_vocab_size += 1;
-
+        i += 1;
+        if i == one_tick_len {
+            bar.loading_bar(curr_vocab_size as f32 / vocab_size as f32);
+            i = 0;
+        }
         merges.push(Merge {
             left: pair.0,
             right: pair.1,
         });
     }
+
+    bar.loading_bar_del();
+    log_success!("BPE Training complete with {} merges.\n", merges.len());
 
     Ok(BpeTokenizer { merges })
 }

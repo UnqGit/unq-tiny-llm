@@ -1,3 +1,5 @@
+use crate::{log_info, log_success};
+use crate::logger::Fax;
 use crate::tokenizer::bpe::training::internal::{TokenPair, count_pairs, get_most_freq_pair};
 use crate::tokenizer::bpe::types::{BpeTokenizer, Merge, TokenId};
 use crate::tokenizer::bpe::training::initial::initial_token_sequence;
@@ -56,6 +58,9 @@ pub fn bpe_training(
     vocab_size: usize,
     min_pair_freq: usize,
 ) -> Result<BpeTokenizer, String> {
+    log_info!("BPE Training initialized.");
+    log_info!("Method of training: Naive\n");
+
     let mut curr_vocab_size: TokenId = 256; // initial vocab consisting of all possible bytes
     let mut merges = Vec::new();
     let mut token_sequence = initial_token_sequence(pretokens);
@@ -66,14 +71,27 @@ pub fn bpe_training(
         ));
     }
 
+    let mut fax = Fax::new();
+    let loading_bar_len = 40;
+    let one_tick_len = vocab_size.div_ceil(loading_bar_len);
+    let mut i = 0;
+    fax.loading_bar_set(loading_bar_len);
+
     while vocab_size > curr_vocab_size {
         let Some(seq_tok) = bpe_iter(&token_sequence, min_pair_freq, curr_vocab_size) else {
             break;
         };
-        token_sequence = seq_tok.0;
         curr_vocab_size += 1;
+        token_sequence = seq_tok.0;
         merges.push(seq_tok.1);
+        i += 1;
+        if i == one_tick_len {
+            fax.loading_bar(curr_vocab_size as f32 / vocab_size as f32);
+            i = 0;
+        }
     }
+    fax.loading_bar_del();
+    log_success!("BPE Training complete with {} merges.\n", merges.len());
 
     Ok(BpeTokenizer { merges })
 }

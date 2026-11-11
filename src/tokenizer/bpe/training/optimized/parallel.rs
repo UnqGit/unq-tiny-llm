@@ -1,16 +1,14 @@
 use rayon::prelude::*;
 
-use crate::tokenizer::{
+use crate::{log_info, log_success, logger::Fax, tokenizer::{
     bpe::{
         training::{
-            internal::{self, TokenFreqMap, TokenPair}, optimized::internal::{ThreadTokenArena, TokenDeltaMap, calculate_chunk_count, create_thread_arenas, update_thread},
-            initial::{self, TokenArena},
+            initial::{self, TokenArena}, internal::{self, TokenFreqMap, TokenPair}, optimized::internal::{ThreadTokenArena, TokenDeltaMap, calculate_chunk_count, create_thread_arenas, update_thread},
         }, types::{
             BpeTokenizer, Merge, TokenId,
         },
-    },
-    preprocessing::PreTokens
-};
+    }, preprocessing::PreTokens
+}};
 
 fn update_freq_map(freq_map: &mut TokenFreqMap, delta_map: &TokenDeltaMap) -> Result<(), String> {
     for (&pair, &delta) in delta_map {
@@ -50,6 +48,9 @@ fn update(arenas: &mut [ThreadTokenArena], freq_map: &mut TokenFreqMap, removal_
 
 #[allow(unused)]
 pub fn bpe_training(pretokens: &PreTokens, vocab_size: usize, min_pair_freq: usize) -> Result<BpeTokenizer, String> {
+    log_info!("BPE Training initialized.");
+    log_info!("Method of training: Parallel\n");
+
     let total_token_count = pretokens.text.len();
 
     let mut curr_vocab_size = 256;
@@ -75,15 +76,28 @@ pub fn bpe_training(pretokens: &PreTokens, vocab_size: usize, min_pair_freq: usi
     let mut pair_count = internal::count_pairs(&arena);
     let mut arenas = create_thread_arenas(&mut arena, target_count);
     
+    let mut bar = Fax::new();
+    let loading_bar_len = 40;
+    let one_tick_len = vocab_size.div_ceil(loading_bar_len);
+    let mut i = 0;
+    bar.loading_bar_set(loading_bar_len);
+    
     while curr_vocab_size < vocab_size {
         let Some(best_pair) = internal::get_most_freq_pair(&pair_count, min_pair_freq) else { break; };
         update(&mut arenas, &mut pair_count, best_pair, curr_vocab_size)?;
         curr_vocab_size += 1;
+        i += 1;
+        if i == one_tick_len {
+            bar.loading_bar(curr_vocab_size as f32 / vocab_size as f32);
+            i = 0;
+        }
         merges.push(Merge {
             left: best_pair.0,
             right: best_pair.1
         });
     }
+    bar.loading_bar_del();
+    log_success!("BPE Training complete with {} merges.\n", merges.len());
 
     Ok(BpeTokenizer { merges })
 }

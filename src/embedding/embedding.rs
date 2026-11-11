@@ -12,7 +12,7 @@ pub struct Embedding {
     embedding_dim: usize,
 }
 
-impl<> ops::IndexMut<TokenId> for Embedding {
+impl ops::IndexMut<TokenId> for Embedding {
     fn index_mut(&mut self, index: TokenId) -> &mut [Weight] {
         let start = index * self.embedding_dim;
         let end = start + self.embedding_dim;
@@ -20,7 +20,7 @@ impl<> ops::IndexMut<TokenId> for Embedding {
     }
 }
 
-impl<> ops::Index<TokenId> for Embedding {
+impl ops::Index<TokenId> for Embedding {
     type Output = [Weight];
     
     fn index(&self, index: TokenId) -> &Self::Output {
