@@ -1,6 +1,14 @@
 use crate::tokenizer::bpe::types::TokenId;
-use crate::tokenizer::preprocessing::{PreTokens, build_text_seq};
+use crate::tokenizer::preprocessing::PreTokens;
 use std::ops::Range;
+
+fn build_text_seq(pretokens: &PreTokens) -> Vec<&str> {
+    pretokens
+        .chunks
+        .iter()
+        .map(|r| &pretokens.text[r.clone()])
+        .collect()
+}
 
 pub fn initial_token_sequence(pretokens: &PreTokens) -> Vec<Vec<TokenId>> {
     let text_tokens = build_text_seq(pretokens);
@@ -17,7 +25,7 @@ pub struct TokenArena {
     pub chunks: Vec<Range<usize>>,
 }
 
-pub fn get_token_buffer(pretoken_sequence: &PreTokens) -> Vec<TokenId> {
+fn get_token_buffer(pretoken_sequence: &PreTokens) -> Vec<TokenId> {
     pretoken_sequence
         .text
         .as_bytes()
@@ -41,12 +49,18 @@ pub fn build_initial_token_sequence(initial_tokens: &mut TokenArena) -> Vec<&mut
     } = initial_tokens;
     let mut result = Vec::with_capacity(ranges.len());
     let mut remaining = data.as_mut_slice();
+    let mut offset = 0;
 
     for range in ranges {
+        let start = range.start - offset;
         let len = range.end - range.start;
-        let (slice, rest) = remaining.split_at_mut(len);
+
+        let (_, rest) = remaining.split_at_mut(start);
+        let (slice, rest) = rest.split_at_mut(len);
+
         result.push(slice);
         remaining = rest;
+        offset = range.end;
     }
 
     result

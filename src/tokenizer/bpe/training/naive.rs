@@ -33,25 +33,6 @@ fn build_new_seq(
     result_seq
 }
 
-fn bpe_iter(
-    token_sequences: &[Vec<TokenId>],
-    min_pair_freq: usize,
-    new_id: TokenId,
-) -> Option<(Vec<Vec<TokenId>>, Merge)> {
-    let pairs_count = count_pairs(token_sequences);
-    let most_freq_pair = get_most_freq_pair(&pairs_count, min_pair_freq)?;
-    let (token_1, token_2) = most_freq_pair;
-
-    let merge = Merge {
-        left: token_1,
-        right: token_2,
-    };
-
-    let result_seq = build_new_seq(token_sequences, most_freq_pair, new_id);
-
-    Some((result_seq, merge))
-}
-
 #[allow(unused)]
 pub fn bpe_training(
     pretokens: &PreTokens,
@@ -78,12 +59,11 @@ pub fn bpe_training(
     fax.loading_bar_set(loading_bar_len);
 
     while vocab_size > curr_vocab_size {
-        let Some(seq_tok) = bpe_iter(&token_sequence, min_pair_freq, curr_vocab_size) else {
-            break;
-        };
+        let pair_count = count_pairs(&token_sequence);
+        let Some(best_pair) = get_most_freq_pair(&pair_count, min_pair_freq) else { break; };
+        token_sequence = build_new_seq(&token_sequence, best_pair, curr_vocab_size);
+        merges.push(Merge { left: best_pair.0, right: best_pair.1 });
         curr_vocab_size += 1;
-        token_sequence = seq_tok.0;
-        merges.push(seq_tok.1);
         i += 1;
         if i == one_tick_len {
             fax.loading_bar(curr_vocab_size as f32 / vocab_size as f32);

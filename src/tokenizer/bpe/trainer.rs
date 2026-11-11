@@ -67,6 +67,7 @@ fn check_against_naive(tokenizer: &BpeTokenizer, args: Option<TokenizerInfo>) ->
     
     let diff = tokenizer.merges.iter().zip(naive_tokenizer.merges.iter())
         .enumerate()
+        .filter(|(_, (ma, mb))| ma != mb)
         .map(|(i, (ma, mb))| MergeDifference { idx: i, merge_impl: *ma, merge_ref: *mb} )
         .collect::<Vec<_>>();
 
