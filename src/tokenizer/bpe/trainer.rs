@@ -91,7 +91,8 @@ fn train_and_save(
 ) -> Result<BpeTokenizer, String> {
     let tokenizer = training::optimized::bpe_training(pretokens, vocab_size, min_pair_freq)?;
     // debug_assert!(check_against_naive(&tokenizer, Some(TokenizerInfo {pretokens, vocab_size, min_pair_freq})));
-    debug_assert!(check_against_naive(&tokenizer, None)); // In debug mode: comment this and uncomment the above line of code if not running with the same dataset.
+    // In debug mode: comment ^ and uncomment the below line of code if running with the same dataset to not wait for naive to finish.
+    debug_assert!(check_against_naive(&tokenizer, None));
     save_tokenizer(&tokenizer, path)?;
     Ok(tokenizer)
 }

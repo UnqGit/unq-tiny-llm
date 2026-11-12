@@ -1,52 +1,30 @@
 use std::io::Write;
 
-pub struct Fax {
+pub struct LoadingBar {
     load_bar_len: usize,
-    loaded_bar_len: usize,
-    printed_load_bar: bool,
-    loading_bar_activated: bool,
+    target_count: usize,
+    current_count: usize,
 }
 
-impl Fax {
-    pub fn new() -> Self {
-        Fax { load_bar_len: 0, loaded_bar_len: 0, printed_load_bar: false, loading_bar_activated: false }
+impl LoadingBar {
+    pub fn create(target: usize, len: usize) -> Self {
+        LoadingBar { load_bar_len: len, current_count: 0, target_count: target }
     }
 
-    fn clear_loading_bar(&mut self) {
-        if self.printed_load_bar {
-            print!("\r\x1b[2K");
-            self.printed_load_bar = false;
-            self.loaded_bar_len = 0;
-        }
+    pub fn clear(&self) {
+        print!("\r\x1b[2K");
     }
 
-    pub fn loading_bar_set(&mut self, size: usize) {
-        assert!(size != 0);
-        self.clear_loading_bar();
-        self.load_bar_len = size;
-        self.loading_bar_activated = true;
-    }
-    
-    pub fn loading_bar_del(&mut self) {
-        self.clear_loading_bar();
-        self.load_bar_len = 0;
-        self.loading_bar_activated = false;
-    }
+    pub fn show(&mut self, current_count: usize) {
+        assert!(current_count <= self.target_count);
 
-    pub fn loading_bar(&mut self, progress: f32) {
-        assert!(self.loading_bar_activated);
-        assert!(progress >= 0.0 && progress <= 1.0);
-
+        let progress = current_count as f32 / self.target_count as f32;
         let fill = (self.load_bar_len as f32 * progress) as usize;
-        if fill == self.loaded_bar_len {
-            return;
-        }
         let clear = self.load_bar_len - fill;
+        self.current_count = current_count;
         
-        self.clear_loading_bar();
-        self.loaded_bar_len = fill;
-        print!("\r[{}{}]{:6.2}%", "=".repeat(fill), " ".repeat(clear), progress * 100.0);
-        self.printed_load_bar = true;
+        self.clear();
+        print!("\r[{}{}] {}/{} {:6.2}%", "=".repeat(fill), " ".repeat(clear), current_count, self.target_count, progress * 100.0);
         std::io::stdout().flush().unwrap();
     }
 }

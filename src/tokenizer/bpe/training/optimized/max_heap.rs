@@ -3,7 +3,7 @@ use std::{
 };
 use rayon::prelude::*;
 
-use crate::{log_info, log_success, logger::Fax, tokenizer::{
+use crate::{log_info, log_success, logger::LoadingBar, tokenizer::{
     bpe::{
         training::{
             initial::{self, TokenArena}, internal::{self, TokenFreqMap, TokenPair}, optimized::internal::{ThreadTokenArena, TokenDeltaMap, calculate_chunk_count, create_thread_arenas, update_thread},
@@ -112,28 +112,20 @@ pub fn bpe_training(pretokens: &PreTokens, vocab_size: usize, min_pair_freq: usi
     let mut token_queue = create_priority_queue(&pair_count);
     let mut arenas = create_thread_arenas(&mut arena, target_count);
 
-    let mut bar = Fax::new();
-    let loading_bar_len = 40;
-    let one_tick_len = vocab_size.div_ceil(loading_bar_len);
-    let mut i = 0;
-    bar.loading_bar_set(loading_bar_len);
-    
+    let mut bar = LoadingBar::create(vocab_size, 40);
+
     while curr_vocab_size < vocab_size {
         let Some(best_pair) = get_most_freq_pair(&pair_count, &mut token_queue, min_pair_freq) else { break; };
         update(&mut arenas, &mut pair_count, &mut token_queue, best_pair, curr_vocab_size)?;
         curr_vocab_size += 1;
-        i += 1;
 
-        if i == one_tick_len {
-            bar.loading_bar(curr_vocab_size as f32 / vocab_size as f32);
-            i = 0;
-        }
+        bar.show(curr_vocab_size);
         merges.push(Merge {
             left: best_pair.0,
             right: best_pair.1
         });
     }
-    bar.loading_bar_del();
+    bar.clear();
     log_success!("BPE Training complete with {} merges.\n", merges.len());
 
     Ok(BpeTokenizer { merges })

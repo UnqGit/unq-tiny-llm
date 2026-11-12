@@ -1,5 +1,5 @@
 use crate::{log_info, log_success};
-use crate::logger::Fax;
+use crate::logger::LoadingBar;
 use crate::tokenizer::bpe::training::internal::{TokenFreqMap, TokenPair, count_pairs, get_most_freq_pair};
 use crate::tokenizer::bpe::types::{BpeTokenizer, Merge, TokenId};
 use crate::tokenizer::bpe::training::optimized::internal::{update_sequence, decrement_pair};
@@ -87,12 +87,8 @@ pub fn bpe_training(
         ));
     }
 
-    let mut bar = Fax::new();
-    let loading_bar_len = 40;
-    let one_tick_len = vocab_size.div_ceil(loading_bar_len);
-    let mut i = 0;
-    bar.loading_bar_set(loading_bar_len);
-    
+    let mut bar = LoadingBar::create(vocab_size, 40);
+
     while vocab_size > curr_vocab_size {
         let Some(pair) = get_most_freq_pair(&token_pair, min_pair_freq) else {
             break;
@@ -100,18 +96,13 @@ pub fn bpe_training(
         update_sequences(pair, curr_vocab_size, &mut token_seq, &mut lens);
         update_pair_count(&token_seq, &lens, pair, curr_vocab_size, &mut token_pair)?;
         curr_vocab_size += 1;
-        i += 1;
-        if i == one_tick_len {
-            bar.loading_bar(curr_vocab_size as f32 / vocab_size as f32);
-            i = 0;
-        }
+        bar.show(curr_vocab_size);
         merges.push(Merge {
             left: pair.0,
             right: pair.1,
         });
     }
-    
-    bar.loading_bar_del();
+    bar.clear();
     log_success!("BPE Training complete with {} merges.\n", merges.len());
 
     Ok(BpeTokenizer { merges })
