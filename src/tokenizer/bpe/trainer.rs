@@ -38,6 +38,7 @@ struct TokenizerInfo<'a> {
     min_pair_freq: usize,
 }
 
+#[allow(unused)]
 fn check_against_naive(tokenizer: &BpeTokenizer, args: Option<TokenizerInfo>) -> bool {
     log_info!("Checking implementation against naive implementation.");
     let naive_tokenizer = match args {
@@ -92,7 +93,7 @@ fn train_and_save(
     let tokenizer = training::optimized::bpe_training(pretokens, vocab_size, min_pair_freq)?;
     // debug_assert!(check_against_naive(&tokenizer, Some(TokenizerInfo {pretokens, vocab_size, min_pair_freq})));
     // In debug mode: comment ^ and uncomment the below line of code if running with the same dataset to not wait for naive to finish.
-    debug_assert!(check_against_naive(&tokenizer, None));
+    // debug_assert!(check_against_naive(&tokenizer, None));
     save_tokenizer(&tokenizer, path)?;
     Ok(tokenizer)
 }

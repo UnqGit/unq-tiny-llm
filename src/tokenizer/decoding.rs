@@ -1,8 +1,7 @@
 use std::{cmp, fs::File, io::Write, path::Path};
 
 use crate::{
-    config::Config,
-    tokenizer::{
+    config::Config, log_error, log_info, log_success, tokenizer::{
         bpe::{
             serialization::load_tokenizer,
             types::{BpeTokenizer, TokenId},
@@ -16,13 +15,14 @@ pub fn decode_as_bytes(
     token_sequence: &[TokenId],
     tokenizer: &BpeTokenizer,
 ) -> Result<TokenSeq, String> {
+    log_info!("Constructing vocabulary from merge sequence.");
     let vocab = build_vocab_repr_seq(tokenizer);
     let mut res: TokenSeq = Vec::new();
 
     for &t in token_sequence {
         if t >= vocab.len() {
             return Err(format!(
-                "TokenId `{}` is out of bounds of the vocabulary(which is of len={}).\n Wrong pair of token_sequence and tokenizer.",
+                "TokenId `{}` is out of bounds of the vocabulary(which is of len={}).\n Wrong pair of encoded sequence and tokenizer.",
                 t,
                 vocab.len()
             ));
@@ -73,18 +73,20 @@ pub fn decode_as_string_and_save(
 }
 
 pub fn run_decoder(config: &Config) {
+    log_info!("Loading encoded data to decode.");
     let token_sequence = match load_encoded(&config.paths.encoder) {
         Ok(data) => data,
         Err(err) => {
-            eprintln!("{err}");
+            log_error!("{err}");
             return;
         }
     };
 
+    log_info!("Loading tokenizer to decode with.");
     let tokenizer = match load_tokenizer(&config.paths.tokenizer) {
         Ok(tok) => tok,
         Err(err) => {
-            eprintln!(
+            log_error!(
                 "Could not load the tokenizer from memory from path `{}`: {:?}",
                 config.paths.tokenizer.display(),
                 err
@@ -93,7 +95,7 @@ pub fn run_decoder(config: &Config) {
         }
     };
 
-    println!(
+    log_info!(
         "Number of the encoded tokens: {}\nPreview of the encoded tokens:\n\n{:?}...\n",
         token_sequence.len(),
         token_sequence.iter().take(15).collect::<Vec<_>>()
@@ -101,12 +103,12 @@ pub fn run_decoder(config: &Config) {
 
     if config.decoder.save_as_bytes {
         match decode_as_bytes_and_save(&token_sequence, &tokenizer, &config.paths.decoder) {
-            Err(err) => eprintln!("Error occured during decoding of tokens:\n{err}"),
+            Err(err) => log_error!("Error occured during decoding of tokens:\n{err}"),
             Ok(v) => {
-                println!(
+                log_success!(
                     "Decoding of tokens successfully completed and data is succesfully saved."
                 );
-                println!(
+                log_info!(
                     "Byte Preview:\n{:#?}...",
                     v.iter().take(15).collect::<Vec<_>>()
                 );
@@ -114,14 +116,14 @@ pub fn run_decoder(config: &Config) {
         }
     } else {
         match decode_as_string_and_save(&token_sequence, &tokenizer, &config.paths.decoder) {
-            Err(err) => eprintln!("Error occured during decoding of tokens:\n{err}"),
+            Err(err) => log_error!("Error occured during decoding of tokens:\n{err}"),
             Ok(v) => {
                 let max_bytes = cmp::min(1000, v.len());
                 let boundary = v.floor_char_boundary(max_bytes);
-                println!(
+                log_success!(
                     "Decoding of tokens successfully completed and data is succesfully saved."
                 );
-                println!("Text Preview:\n{}...", &v[..boundary]);
+                log_info!("Text Preview:\n{}...", &v[..boundary]);
             }
         }
     }
